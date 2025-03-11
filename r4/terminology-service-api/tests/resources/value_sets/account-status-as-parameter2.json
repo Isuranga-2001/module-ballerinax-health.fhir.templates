@@ -5,6 +5,19 @@
   },
   "parameter": [
     {
+      "name": "codeableConcept",
+      "valueCodeableConcept": {
+        "coding": [
+          {
+            "system": "http://hl7.org/fhir/account-status",
+            "code": "inactive",
+            "display": "Inactive"
+          }
+        ],
+        "text": "In-Active Account Status"
+      }
+    },
+    {
       "name": "valueSet",
       "resource": {
         "resourceType": "ValueSet",

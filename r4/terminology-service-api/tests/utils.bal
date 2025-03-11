@@ -39,6 +39,17 @@ function returnValueSetData(string fileName) returns json {
     }
 }
 
+function returnBatchData(string fileName) returns json {
+    string filePath = string `tests/resources/value_sets/batch_validation/${fileName}.json`;
+    json|error data = io:fileReadJson(filePath);
+
+    if data is json {
+        return data;
+    } else {
+        test:assertFail(string `Cannot load data from: ${filePath}`);
+    }
+}
+
 function readJsonData(string fileName) returns json {
     string filePath = string `tests/resources/terminology/${fileName}.json`;
     json|error data = io:fileReadJson(filePath);
@@ -49,4 +60,3 @@ function readJsonData(string fileName) returns json {
         test:assertFail(string `Can not load data from: ${filePath}`);
     }
 }
-    
