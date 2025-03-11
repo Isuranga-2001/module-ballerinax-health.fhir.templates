@@ -1,10 +1,12 @@
 import ballerina/http;
-import ballerinax/health.fhir.r4.terminology;
-import ballerinax/health.fhir.r4;
 import ballerina/test;
+import ballerinax/health.fhir.r4;
+import ballerinax/health.fhir.r4.international401;
+import ballerinax/health.fhir.r4.terminology;
 
 http:Client csClient = check new ("http://localhost:9090/fhir/r4/Codesystem");
 http:Client vsClient = check new ("http://localhost:9090/fhir/r4/Valueset");
+http:Client createClient = check new ("http://localhost:9090/fhir/r4/create");
 
 @test:Config {
     groups: ["codesystem", "get_by_id_codesystem", "successful_scenario"]
@@ -32,11 +34,11 @@ public function getByIdCodeSystem2() returns error? {
 public function searchCodeSystem1() returns error? {
     http:Response response = check csClient->get("?url=http://hl7.org/fhir/account-status");
     json actualJson = check response.getJsonPayload();
-    // r4:Bundle actual = check parser:parse(actualJson, r4:Bundle).ensureType();
     r4:Bundle actual = check actualJson.cloneWithType(r4:Bundle);
 
     r4:Bundle expected = check returnCodeSystemData("account-status-bundle").cloneWithType(r4:Bundle);
     expected.meta.lastUpdated = actual.meta.lastUpdated;
+    expected.'type = r4:BUNDLE_TYPE_SEARCHSET;
 
     test:assertEquals(actual.toJson(), expected.toJson());
 }
@@ -45,9 +47,8 @@ public function searchCodeSystem1() returns error? {
     groups: ["codesystem", "get_by_id_codesystem", "successful_scenario"]
 }
 public function searchCodeSystem2() returns error? {
-    http:Response response = check csClient->get("?url=http://hl7.org/fhir/account-status");
+    http:Response response = check csClient->get("?url=http://hl7.org/fhir/account-status&version=4.0.1&title=AccountStatus&status=draft&count=10&offset=0&name=AccountStatus&publisher=HL7%20%28FHIR%20Project%29");
     json actualJson = check response.getJsonPayload();
-    // r4:Bundle actual = check parser:parse(actualJson, r4:Bundle).ensureType();
     r4:Bundle actual = check actualJson.cloneWithType(r4:Bundle);
 
     r4:Bundle expected = check returnCodeSystemData("account-status-bundle").cloneWithType(r4:Bundle);
@@ -83,7 +84,7 @@ public function lookupCodeSystem2() returns error? {
 }
 public function lookupCodeSystem3() returns error? {
     r4:Coding|r4:FHIRError coding = terminology:createCoding("http://hl7.org/fhir/account-status", "inactive");
-    r4:Parameters p = {'parameter: [{name: "coding", valueCoding: check coding}]};
+    international401:Parameters p = {'parameter: [{name: "coding", valueCoding: check coding}]} ;
     http:Response response = check csClient->post("/%24lookup", p);
     json actual = check response.getJsonPayload();
 
@@ -156,7 +157,7 @@ public function lookupCodeSystem8() returns error? {
     groups: ["codesystem", "lookup_codesystem", "failure_scenario"]
 }
 public function lookupCodeSystem9() returns error? {
-    r4:Parameters parameters = {'parameter: [{name: "sample"}]};
+    international401:Parameters parameters = {'parameter: [{name: "sample"}]} ;
     http:Response response = check csClient->post("/%24lookup", parameters);
     json actualJson = check response.getJsonPayload();
     r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
@@ -169,7 +170,7 @@ public function lookupCodeSystem9() returns error? {
 public function lookupCodeSystem10() returns error? {
     r4:Coding coding = check terminology:createCoding("http://hl7.org/fhir/account-status", "inactive");
     coding.system = ();
-    r4:Parameters parameters = {'parameter: [{name: "coding", valueCoding: coding}]};
+    international401:Parameters parameters = {'parameter: [{name: "coding", valueCoding: coding}]};
     http:Response response = check csClient->post("/%24lookup", parameters);
     json actualJson = check response.getJsonPayload();
     r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
@@ -206,10 +207,10 @@ public function subsumeCodeSystem3() returns error? {
     r4:Coding codingA = check terminology:createCoding("http://hl7.org/fhir/account-status", "inactive");
     r4:Coding codingB = check terminology:createCoding("http://hl7.org/fhir/account-status", "inactive");
 
-    r4:ParametersParameter cA = {name: "codingA", valueCoding: codingA};
-    r4:ParametersParameter cB = {name: "codingB", valueCoding: codingB};
-    r4:ParametersParameter system = {name: "system", valueUri: "http://hl7.org/fhir/account-status"};
-    r4:Parameters requestPayload = {'parameter: [cA, cB, system]};
+    international401:ParametersParameter cA = {name: "codingA", valueCoding: codingA};
+    international401:ParametersParameter cB = {name: "codingB", valueCoding: codingB};
+    international401:ParametersParameter system = {name: "system", valueUri: "http://hl7.org/fhir/account-status"};
+    international401:Parameters requestPayload = {'parameter: [cA, cB, system]};
 
     http:Response response = check csClient->post("/%24subsumes", requestPayload);
     json actual = check response.getJsonPayload();
@@ -347,11 +348,8 @@ public function validateCodeValueSet4() returns error? {
 }
 public function validateCodeValueSet5() returns error? {
     json requestPayload = returnValueSetData("account-status-as-parameter2");
-    r4:Parameters parameters = check requestPayload.cloneWithType(r4:Parameters);
-    r4:CodeableConcept codeableConcept = check r4:terminologyProcessor.createCodeableConcept("http://hl7.org/fhir/ValueSet/account-status", "inactive");
-    _ = (<r4:ParametersParameter[]>parameters.'parameter).push({name: "codeableConcept", valueCodeableConcept: codeableConcept});
 
-    http:Response response = check vsClient->post("/%24validate-code", parameters);
+    http:Response response = check vsClient->post("/%24validate-code", requestPayload);
     json actual = check response.getJsonPayload();
 
     json expected = returnValueSetData("validate-code");
@@ -475,4 +473,40 @@ public function expandValueSet5() returns error? {
     json actualJson = check response.getJsonPayload();
     r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
     test:assertEquals((<r4:CodeableConcept>actual.issue[0].details).text, "Invalid request payload");
+}
+
+@test:Config {
+    groups: ["codesystem", "concepts", "successful_scenario"]
+}
+public function testCodeSystemConceptPropertiesAndDesignations() returns error? {
+    r4:CodeSystemConcept concept = check returnCodeSystemData("designation-input").cloneWithType(r4:CodeSystemConcept);
+
+    international401:Parameters parameters = codesystemConceptsToParameters(concept);
+    json actualJson = parameters.toJson();
+
+    json expectedJson = returnCodeSystemData("designation-expected");
+    test:assertEquals(actualJson, expectedJson);
+}
+
+@test:Config {
+    groups: ["codesystem", "concepts", "successful_scenario"]
+}
+public function testCodeSystemConceptsArray() returns error? {
+    json jsonData = returnCodeSystemData("concepts-array-input");
+    r4:CodeSystemConcept[] concepts = [];
+
+    if jsonData is json[] {
+        foreach var item in jsonData {
+            r4:CodeSystemConcept concept = check item.cloneWithType(r4:CodeSystemConcept);
+            concepts.push(concept);
+        }
+    } else {
+        return error("Invalid JSON data format");
+    }
+
+    international401:Parameters parameters = codesystemConceptsToParameters(concepts);
+    json actualJson = parameters.toJson();
+
+    json expectedJson = returnCodeSystemData("concepts-array-expected");
+    test:assertEquals(actualJson, expectedJson);
 }

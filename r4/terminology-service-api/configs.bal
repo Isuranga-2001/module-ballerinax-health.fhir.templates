@@ -1,6 +1,7 @@
 //Congifurations
 public final string DB_NAME = "terminology";
-public final boolean IS_DB_CONNECTED = true;
+public final boolean IS_DB_CONNECTED = false;
+// public final boolean IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED = false;
 
 //Constants
 public string TABLE_NAME = "";
