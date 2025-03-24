@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-conceptmap-api
+      displayName: international401 ConceptMap API
+      service:
+        basePath: /ConceptMap
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/ConceptMap.yaml

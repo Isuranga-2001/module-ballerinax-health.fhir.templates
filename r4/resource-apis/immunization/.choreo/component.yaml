@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-immunization-api
+      displayName: international401 Immunization API
+      service:
+        basePath: /Immunization
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/Immunization.yaml

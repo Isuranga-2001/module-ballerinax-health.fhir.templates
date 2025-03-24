@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-practitionerrole-api
+      displayName: international401 PractitionerRole API
+      service:
+        basePath: /PractitionerRole
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/PractitionerRole.yaml

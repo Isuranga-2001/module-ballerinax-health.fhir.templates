@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-invoice-api
+      displayName: international401 Invoice API
+      service:
+        basePath: /Invoice
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/Invoice.yaml

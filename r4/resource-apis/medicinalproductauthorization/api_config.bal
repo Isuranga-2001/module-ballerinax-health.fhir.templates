@@ -1,14 +1,18 @@
-// Copyright (c) 2023, WSO2 LLC. (http://www.wso2.com). All Rights Reserved.
+// Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
 
-// This software is the property of WSO2 LLC. and its suppliers, if any.
-// Dissemination of any information or reproduction of any material contained
-// herein is strictly forbidden, unless permitted by WSO2 in accordance with
-// the WSO2 Software License available at: https://wso2.com/licenses/eula/3.2
-// For specific language governing the permissions and limitations under
-// this license, please see the license as well as any agreement you’ve
-// entered into with WSO2 governing the purchase of this software and any
-// associated services.
-//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+
+// http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 //
 // AUTO-GENERATED FILE.
 //
@@ -24,6 +28,51 @@ final r4:ResourceAPIConfig apiConfig = {
     ],
     defaultProfile: (),
     searchParameters: [
+            {
+        name: "country",
+        active: true,
+        information: {
+            description: "The country in which the marketing authorization has been granted",
+            builtin: false,
+            documentation: "http://hl7.org/fhir/SearchParameter/MedicinalProductAuthorization-country"
+        }
+    },
+            {
+        name: "subject",
+        active: true,
+        information: {
+            description: "The medicinal product that is being authorized",
+            builtin: false,
+            documentation: "http://hl7.org/fhir/SearchParameter/MedicinalProductAuthorization-subject"
+        }
+    },
+            {
+        name: "holder",
+        active: true,
+        information: {
+            description: "Marketing Authorization Holder",
+            builtin: false,
+            documentation: "http://hl7.org/fhir/SearchParameter/MedicinalProductAuthorization-holder"
+        }
+    },
+            {
+        name: "status",
+        active: true,
+        information: {
+            description: "The status of the marketing authorization",
+            builtin: false,
+            documentation: "http://hl7.org/fhir/SearchParameter/MedicinalProductAuthorization-status"
+        }
+    },
+            {
+        name: "identifier",
+        active: true,
+        information: {
+            description: "Business identifier for the marketing authorization, as assigned by a regulator",
+            builtin: false,
+            documentation: "http://hl7.org/fhir/SearchParameter/MedicinalProductAuthorization-identifier"
+        }
+    }
         ],
     operations: [
     

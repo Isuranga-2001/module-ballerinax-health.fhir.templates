@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-documentmanifest-api
+      displayName: international401 DocumentManifest API
+      service:
+        basePath: /DocumentManifest
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/DocumentManifest.yaml

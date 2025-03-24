@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-chargeitemdefinition-api
+      displayName: international401 ChargeItemDefinition API
+      service:
+        basePath: /ChargeItemDefinition
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/ChargeItemDefinition.yaml

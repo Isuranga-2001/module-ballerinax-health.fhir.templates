@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-biologicallyderivedproduct-api
+      displayName: international401 BiologicallyDerivedProduct API
+      service:
+        basePath: /BiologicallyDerivedProduct
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/BiologicallyDerivedProduct.yaml

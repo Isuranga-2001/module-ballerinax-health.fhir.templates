@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-detectedissue-api
+      displayName: international401 DetectedIssue API
+      service:
+        basePath: /DetectedIssue
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/DetectedIssue.yaml

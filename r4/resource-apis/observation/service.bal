@@ -1,14 +1,18 @@
-// Copyright (c) 2023, WSO2 LLC. (http://www.wso2.com). All Rights Reserved.
+// Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
 
-// This software is the property of WSO2 LLC. and its suppliers, if any.
-// Dissemination of any information or reproduction of any material contained
-// herein is strictly forbidden, unless permitted by WSO2 in accordance with
-// the WSO2 Software License available at: https://wso2.com/licenses/eula/3.2
-// For specific language governing the permissions and limitations under
-// this license, please see the license as well as any agreement you’ve
-// entered into with WSO2 governing the purchase of this software and any
-// associated services.
-//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+
+// http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 //
 // AUTO-GENERATED FILE.
 //
@@ -23,7 +27,7 @@ import ballerinax/health.fhir.r4.international401;
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type Observation r4:Observation|<other_Observation_Profile>;
-public type Observation international401:Observation;
+public type Observation international401:observation_vitalsigns|international401:observation_headcircum|international401:observation_bmi|international401:observation_vitalspanel|international401:observation_resprate|international401:observation_bodytemp|international401:observation_bodyweight|international401:observation_bp|international401:observation_heartrate|international401:Observation|international401:observation_bodyheight|international401:observation_oxygensat|international401:Observation_genetics;
 
 # initialize source system endpoint here
 

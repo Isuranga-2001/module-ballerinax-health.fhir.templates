@@ -1,14 +1,18 @@
-// Copyright (c) 2023, WSO2 LLC. (http://www.wso2.com). All Rights Reserved.
+// Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
 
-// This software is the property of WSO2 LLC. and its suppliers, if any.
-// Dissemination of any information or reproduction of any material contained
-// herein is strictly forbidden, unless permitted by WSO2 in accordance with
-// the WSO2 Software License available at: https://wso2.com/licenses/eula/3.2
-// For specific language governing the permissions and limitations under
-// this license, please see the license as well as any agreement you’ve
-// entered into with WSO2 governing the purchase of this software and any
-// associated services.
-//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+
+// http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 //
 // AUTO-GENERATED FILE.
 //
@@ -76,6 +80,15 @@ final r4:ResourceAPIConfig apiConfig = {
             description: "[Patient](patient.html): A portion of either family or given name using some kind of phonetic matching algorithm",
             builtin: false,
             documentation: "http://hl7.org/fhir/SearchParameter/individual-phonetic"
+        }
+    },
+            {
+        name: "birthOrderBoolean",
+        active: true,
+        information: {
+            description: "Search based on whether a patient was part of a multiple birth or not.",
+            builtin: false,
+            documentation: "http://hl7.org/fhir/SearchParameter/patient-extensions-Patient-birthOrderBoolean"
         }
     },
             {
@@ -169,6 +182,24 @@ final r4:ResourceAPIConfig apiConfig = {
         }
     },
             {
+        name: "mothersMaidenName",
+        active: true,
+        information: {
+            description: "Search based on patient's mother's maiden name",
+            builtin: false,
+            documentation: "http://hl7.org/fhir/SearchParameter/patient-extensions-Patient-mothersMaidenName"
+        }
+    },
+            {
+        name: "age",
+        active: true,
+        information: {
+            description: "Searches for patients based on age as calculated based on current date and date of birth.  Deceased patients are excluded from the search.",
+            builtin: false,
+            documentation: "http://hl7.org/fhir/SearchParameter/patient-extensions-Patient-age"
+        }
+    },
+            {
         name: "address-postalcode",
         active: true,
         information: {
@@ -178,10 +209,19 @@ final r4:ResourceAPIConfig apiConfig = {
         }
     },
             {
+        name: "part-agree",
+        active: true,
+        information: {
+            description: "Search by url for a participation agreement, which is stored in a DocumentReference",
+            builtin: false,
+            documentation: "http://hl7.org/fhir/SearchParameter/example-extension"
+        }
+    },
+            {
         name: "deceased",
         active: true,
         information: {
-            description: "This patient has been marked as deceased, or has a death date entered",
+            description: "This patient has been marked as deceased, or as a death date entered",
             builtin: false,
             documentation: "http://hl7.org/fhir/SearchParameter/Patient-deceased"
         }

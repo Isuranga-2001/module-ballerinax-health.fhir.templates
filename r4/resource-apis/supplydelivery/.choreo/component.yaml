@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-supplydelivery-api
+      displayName: international401 SupplyDelivery API
+      service:
+        basePath: /SupplyDelivery
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/SupplyDelivery.yaml

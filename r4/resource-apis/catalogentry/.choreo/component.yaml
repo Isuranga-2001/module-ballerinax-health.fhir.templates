@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-catalogentry-api
+      displayName: international401 CatalogEntry API
+      service:
+        basePath: /CatalogEntry
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/CatalogEntry.yaml

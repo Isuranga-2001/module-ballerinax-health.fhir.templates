@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-observationdefinition-api
+      displayName: international401 ObservationDefinition API
+      service:
+        basePath: /ObservationDefinition
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/ObservationDefinition.yaml
