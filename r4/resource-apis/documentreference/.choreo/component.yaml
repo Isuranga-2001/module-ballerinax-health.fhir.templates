@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-documentreference-api
+      displayName: international401 DocumentReference API
+      service:
+        basePath: /DocumentReference
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/DocumentReference.yaml

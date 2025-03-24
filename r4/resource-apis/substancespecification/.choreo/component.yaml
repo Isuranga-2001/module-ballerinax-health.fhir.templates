@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-substancespecification-api
+      displayName: international401 SubstanceSpecification API
+      service:
+        basePath: /SubstanceSpecification
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/SubstanceSpecification.yaml

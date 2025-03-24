@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-contract-api
+      displayName: international401 Contract API
+      service:
+        basePath: /Contract
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/Contract.yaml

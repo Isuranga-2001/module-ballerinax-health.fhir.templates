@@ -1,14 +1,18 @@
-// Copyright (c) 2023, WSO2 LLC. (http://www.wso2.com). All Rights Reserved.
+// Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
 
-// This software is the property of WSO2 LLC. and its suppliers, if any.
-// Dissemination of any information or reproduction of any material contained
-// herein is strictly forbidden, unless permitted by WSO2 in accordance with
-// the WSO2 Software License available at: https://wso2.com/licenses/eula/3.2
-// For specific language governing the permissions and limitations under
-// this license, please see the license as well as any agreement you’ve
-// entered into with WSO2 governing the purchase of this software and any
-// associated services.
-//
+// WSO2 LLC. licenses this file to you under the Apache License,
+// Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License.
+// You may obtain a copy of the License at
+
+// http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 //
 // AUTO-GENERATED FILE.
 //
@@ -20,10 +24,36 @@ import ballerinax/health.fhir.r4;
 final r4:ResourceAPIConfig apiConfig = {
     resourceType: "Observation",
     profiles: [
-            "http://hl7.org/fhir/StructureDefinition/Observation"        
+            "http://hl7.org/fhir/StructureDefinition/ldlcholesterol",
+                            "http://hl7.org/fhir/StructureDefinition/vitalsigns",
+                            "http://hl7.org/fhir/StructureDefinition/headcircum",
+                            "http://hl7.org/fhir/StructureDefinition/cholesterol",
+                            "http://hl7.org/fhir/StructureDefinition/bmi",
+                            "http://hl7.org/fhir/StructureDefinition/vitalspanel",
+                            "http://hl7.org/fhir/StructureDefinition/devicemetricobservation",
+                            "http://hl7.org/fhir/StructureDefinition/triglyceride",
+                            "http://hl7.org/fhir/StructureDefinition/resprate",
+                            "http://hl7.org/fhir/StructureDefinition/hdlcholesterol",
+                            "http://hl7.org/fhir/StructureDefinition/bodytemp",
+                            "http://hl7.org/fhir/StructureDefinition/bodyweight",
+                            "http://hl7.org/fhir/StructureDefinition/bp",
+                            "http://hl7.org/fhir/StructureDefinition/heartrate",
+                            "http://hl7.org/fhir/StructureDefinition/Observation",
+                            "http://hl7.org/fhir/StructureDefinition/bodyheight",
+                            "http://hl7.org/fhir/StructureDefinition/oxygensat",
+                            "http://hl7.org/fhir/StructureDefinition/observation-genetics"        
     ],
     defaultProfile: (),
     searchParameters: [
+            {
+        name: "gene-dnavariant",
+        active: true,
+        information: {
+            description: "HGNC gene symbol and HGVS DNA Variant",
+            builtin: false,
+            documentation: "http://hl7.org/fhir/SearchParameter/observation-genetic-Observation-gene-dnavariant"
+        }
+    },
             {
         name: "combo-code-value-concept",
         active: true,
@@ -58,6 +88,15 @@ final r4:ResourceAPIConfig apiConfig = {
             description: "Component code and component coded value parameter pair",
             builtin: false,
             documentation: "http://hl7.org/fhir/SearchParameter/Observation-component-code-value-concept"
+        }
+    },
+            {
+        name: "dna-variant",
+        active: true,
+        information: {
+            description: "HGVS DNA variant",
+            builtin: false,
+            documentation: "http://hl7.org/fhir/SearchParameter/observation-genetic-Observation-dna-variant"
         }
     },
             {
@@ -130,6 +169,15 @@ final r4:ResourceAPIConfig apiConfig = {
             description: "The value of the component observation, if the value is a CodeableConcept",
             builtin: false,
             documentation: "http://hl7.org/fhir/SearchParameter/Observation-component-value-concept"
+        }
+    },
+            {
+        name: "gene-amino-acid-change",
+        active: true,
+        information: {
+            description: "HGNC gene symbol and HGVS Protein change",
+            builtin: false,
+            documentation: "http://hl7.org/fhir/SearchParameter/observation-genetic-Observation-gene-amino-acid-change"
         }
     },
             {
@@ -268,6 +316,15 @@ final r4:ResourceAPIConfig apiConfig = {
         }
     },
             {
+        name: "gene-identifier",
+        active: true,
+        information: {
+            description: "HGNC gene symbol and identifier",
+            builtin: false,
+            documentation: "http://hl7.org/fhir/SearchParameter/observation-genetic-Observation-gene-identifier"
+        }
+    },
+            {
         name: "code-value-date",
         active: true,
         information: {
@@ -292,6 +349,15 @@ final r4:ResourceAPIConfig apiConfig = {
             description: "The focus of an observation when the focus is not the patient of record.",
             builtin: false,
             documentation: "http://hl7.org/fhir/SearchParameter/Observation-focus"
+        }
+    },
+            {
+        name: "amino-acid-change",
+        active: true,
+        information: {
+            description: "HGVS Protein Change",
+            builtin: false,
+            documentation: "http://hl7.org/fhir/SearchParameter/observation-genetic-Observation-amino-acid-change"
         }
     },
             {

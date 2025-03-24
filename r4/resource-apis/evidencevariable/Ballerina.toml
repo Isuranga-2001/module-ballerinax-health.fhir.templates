@@ -1,8 +1,8 @@
 [package]
 org = "ballerinax"
 name = "health.fhir.templates.international401.evidencevariable"
-version = "2.0.1"
-distribution = "2201.8.1"
+version = "3.0.0"
+distribution = "2201.10.2"
 authors = ["Ballerina"]
-keywords = ["Healthcare", "FHIR", "EvidenceVariable", "r4", "health.fhir.templates.international401"]
+keywords = ["Healthcare", "FHIR", "EvidenceVariable", "r4", "health.fhir.r4.international401"]
 template = true

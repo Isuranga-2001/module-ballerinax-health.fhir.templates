@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-paymentnotice-api
+      displayName: international401 PaymentNotice API
+      service:
+        basePath: /PaymentNotice
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/PaymentNotice.yaml

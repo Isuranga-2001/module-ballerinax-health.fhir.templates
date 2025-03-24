@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-substancenucleicacid-api
+      displayName: international401 SubstanceNucleicAcid API
+      service:
+        basePath: /SubstanceNucleicAcid
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/SubstanceNucleicAcid.yaml

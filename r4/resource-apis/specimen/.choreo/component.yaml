@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-specimen-api
+      displayName: international401 Specimen API
+      service:
+        basePath: /Specimen
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/Specimen.yaml

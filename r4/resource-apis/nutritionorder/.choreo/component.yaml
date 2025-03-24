@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-nutritionorder-api
+      displayName: international401 NutritionOrder API
+      service:
+        basePath: /NutritionOrder
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/NutritionOrder.yaml

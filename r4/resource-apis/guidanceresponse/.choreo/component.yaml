@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-guidanceresponse-api
+      displayName: international401 GuidanceResponse API
+      service:
+        basePath: /GuidanceResponse
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/GuidanceResponse.yaml

@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-testreport-api
+      displayName: international401 TestReport API
+      service:
+        basePath: /TestReport
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/TestReport.yaml

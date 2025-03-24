@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-messagedefinition-api
+      displayName: international401 MessageDefinition API
+      service:
+        basePath: /MessageDefinition
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/MessageDefinition.yaml

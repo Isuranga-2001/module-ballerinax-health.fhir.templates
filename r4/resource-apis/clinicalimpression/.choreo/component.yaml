@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-clinicalimpression-api
+      displayName: international401 ClinicalImpression API
+      service:
+        basePath: /ClinicalImpression
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/ClinicalImpression.yaml

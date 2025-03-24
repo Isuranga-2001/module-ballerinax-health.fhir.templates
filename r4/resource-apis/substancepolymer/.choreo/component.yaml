@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-substancepolymer-api
+      displayName: international401 SubstancePolymer API
+      service:
+        basePath: /SubstancePolymer
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/SubstancePolymer.yaml
