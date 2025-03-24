@@ -22,12 +22,11 @@
 import ballerina/http;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhirr4;
-import ballerinax/health.fhir.r4.international401;
 
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type CodeSystem r4:CodeSystem|<other_CodeSystem_Profile>;
-public type CodeSystem international401:ShareableCodeSystem;
+public type CodeSystem r4:CodeSystem;
 
 # initialize source system endpoint here
 

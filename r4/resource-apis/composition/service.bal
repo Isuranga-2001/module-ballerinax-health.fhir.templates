@@ -27,7 +27,7 @@ import ballerinax/health.fhir.r4.international401;
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type Composition r4:Composition|<other_Composition_Profile>;
-public type Composition international401:ClinicalDocument|international401:Composition|international401:ProfileforCatalog;
+public type Composition international401:Composition;
 
 # initialize source system endpoint here
 

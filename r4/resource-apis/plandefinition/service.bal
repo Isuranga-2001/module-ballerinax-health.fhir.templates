@@ -27,7 +27,7 @@ import ballerinax/health.fhir.r4.international401;
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type PlanDefinition r4:PlanDefinition|<other_PlanDefinition_Profile>;
-public type PlanDefinition international401:CDSHooksServicePlanDefinition|international401:ComputablePlanDefinition|international401:ShareablePlanDefinition|international401:PlanDefinition;
+public type PlanDefinition international401:PlanDefinition;
 
 # initialize source system endpoint here
 

@@ -27,7 +27,7 @@ import ballerinax/health.fhir.r4.international401;
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type Group r4:Group|<other_Group_Profile>;
-public type Group international401:Group|international401:GroupDefinition|international401:ActualGroup;
+public type Group international401:Group;
 
 # initialize source system endpoint here
 

@@ -27,7 +27,7 @@ import ballerinax/health.fhir.r4.international401;
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type GuidanceResponse r4:GuidanceResponse|<other_GuidanceResponse_Profile>;
-public type GuidanceResponse international401:GuidanceResponse|international401:CDSHooksGuidanceResponse;
+public type GuidanceResponse international401:GuidanceResponse;
 
 # initialize source system endpoint here
 

@@ -42,7 +42,7 @@ jobs:
 
       - name: Run ballerina build for dev
         if: inputs.bal_central_environment == 'DEV'
-        uses: ballerina-platform/ballerina-action@2201.8.1
+        uses: ballerina-platform/ballerina-action@2201.10.2
         with:
           args:
             pack
@@ -54,7 +54,7 @@ jobs:
 
       - name: Run ballerina build for prod
         if: inputs.bal_central_environment == 'PROD'
-        uses: ballerina-platform/ballerina-action@2201.8.1
+        uses: ballerina-platform/ballerina-action@2201.10.2
         with:
           args:
             pack
@@ -64,7 +64,7 @@ jobs:
 
       - name: Push to Dev
         if: inputs.bal_central_environment == 'DEV'
-        uses: ballerina-platform/ballerina-action@2201.8.1
+        uses: ballerina-platform/ballerina-action@2201.10.2
         with:
           args:
             push
@@ -76,7 +76,7 @@ jobs:
 
       - name: Push to Prod
         if: inputs.bal_central_environment == 'PROD'
-        uses: ballerina-platform/ballerina-action@2201.8.1
+        uses: ballerina-platform/ballerina-action@2201.10.2
         with:
           args:
             push

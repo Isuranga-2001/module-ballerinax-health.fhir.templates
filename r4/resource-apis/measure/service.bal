@@ -27,7 +27,7 @@ import ballerinax/health.fhir.r4.international401;
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type Measure r4:Measure|<other_Measure_Profile>;
-public type Measure international401:ShareableMeasure|international401:Measure;
+public type Measure international401:Measure;
 
 # initialize source system endpoint here
 

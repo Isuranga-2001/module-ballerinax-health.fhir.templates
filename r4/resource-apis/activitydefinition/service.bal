@@ -27,7 +27,7 @@ import ballerinax/health.fhir.r4.international401;
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type ActivityDefinition r4:ActivityDefinition|<other_ActivityDefinition_Profile>;
-public type ActivityDefinition international401:ShareableActivityDefinition|international401:ActivityDefinition;
+public type ActivityDefinition international401:ActivityDefinition;
 
 # initialize source system endpoint here
 

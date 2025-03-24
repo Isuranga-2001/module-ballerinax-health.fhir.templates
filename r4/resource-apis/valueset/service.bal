@@ -22,12 +22,11 @@
 import ballerina/http;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhirr4;
-import ballerinax/health.fhir.r4.international401;
 
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type ValueSet r4:ValueSet|<other_ValueSet_Profile>;
-public type ValueSet international401:ShareableValueSet;
+public type ValueSet r4:ValueSet;
 
 # initialize source system endpoint here
 

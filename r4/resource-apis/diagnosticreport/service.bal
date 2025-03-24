@@ -27,7 +27,7 @@ import ballerinax/health.fhir.r4.international401;
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type DiagnosticReport r4:DiagnosticReport|<other_DiagnosticReport_Profile>;
-public type DiagnosticReport international401:DiagnosticReport|international401:ExampleLipidProfile|international401:ProfileforHLAGenotypingResults|international401:DiagnosticReport_Genetics;
+public type DiagnosticReport international401:DiagnosticReport|international401:DiagnosticReport_Genetics;
 
 # initialize source system endpoint here
 

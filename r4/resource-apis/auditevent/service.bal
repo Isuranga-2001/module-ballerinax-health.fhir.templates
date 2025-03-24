@@ -27,7 +27,7 @@ import ballerinax/health.fhir.r4.international401;
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type AuditEvent r4:AuditEvent|<other_AuditEvent_Profile>;
-public type AuditEvent international401:EHRSFMRecordLifecycleEvent_AuditEvent|international401:AuditEvent;
+public type AuditEvent international401:AuditEvent;
 
 # initialize source system endpoint here
 

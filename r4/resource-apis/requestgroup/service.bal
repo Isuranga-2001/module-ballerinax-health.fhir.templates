@@ -27,7 +27,7 @@ import ballerinax/health.fhir.r4.international401;
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type RequestGroup r4:RequestGroup|<other_RequestGroup_Profile>;
-public type RequestGroup international401:RequestGroup|international401:CDSHooksRequestGroup;
+public type RequestGroup international401:RequestGroup;
 
 # initialize source system endpoint here
 

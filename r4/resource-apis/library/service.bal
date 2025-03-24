@@ -27,7 +27,7 @@ import ballerinax/health.fhir.r4.international401;
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type Library r4:Library|<other_Library_Profile>;
-public type Library international401:Library|international401:CQLLibrary|international401:ShareableLibrary;
+public type Library international401:Library;
 
 # initialize source system endpoint here
 

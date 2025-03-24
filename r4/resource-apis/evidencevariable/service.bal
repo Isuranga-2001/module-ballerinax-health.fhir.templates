@@ -27,7 +27,7 @@ import ballerinax/health.fhir.r4.international401;
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type EvidenceVariable r4:EvidenceVariable|<other_EvidenceVariable_Profile>;
-public type EvidenceVariable international401:PICOElementProfile|international401:EvidenceVariable;
+public type EvidenceVariable international401:EvidenceVariable;
 
 # initialize source system endpoint here
 

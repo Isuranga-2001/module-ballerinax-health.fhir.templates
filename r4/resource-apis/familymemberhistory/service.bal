@@ -27,7 +27,7 @@ import ballerinax/health.fhir.r4.international401;
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type FamilyMemberHistory r4:FamilyMemberHistory|<other_FamilyMemberHistory_Profile>;
-public type FamilyMemberHistory international401:Familymemberhistoryforgeneticsanalysis|international401:FamilyMemberHistory;
+public type FamilyMemberHistory international401:FamilyMemberHistory;
 
 # initialize source system endpoint here
 

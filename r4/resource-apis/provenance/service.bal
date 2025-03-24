@@ -27,7 +27,7 @@ import ballerinax/health.fhir.r4.international401;
 # Generic type to wrap all implemented profiles.
 # Add required profile types here.
 # public type Provenance r4:Provenance|<other_Provenance_Profile>;
-public type Provenance international401:ProvenanceRelevantHistory|international401:Provenance|international401:EHRSFMRecordLifecycleEvent_Provenance;
+public type Provenance international401:Provenance;
 
 # initialize source system endpoint here
 
