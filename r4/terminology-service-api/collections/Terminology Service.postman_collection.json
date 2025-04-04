@@ -15,7 +15,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:9090/fhir/r4/Codesystem/action-condition-kind|4.0.1",
+							"raw": "http://localhost:9090/fhir/r4/Codesystem/account-status",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -25,19 +25,19 @@
 								"fhir",
 								"r4",
 								"Codesystem",
-								"action-condition-kind|4.0.1"
+								"account-status"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "$lookup System URL",
+					"name": "Search",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:9090/fhir/r4/Codesystem/action-condition-kind|4.0.1/%24lookup?code=applicability",
+							"raw": "http://localhost:9090/fhir/r4/Codesystem?url=http://hl7.org/fhir/account-status",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -46,14 +46,12 @@
 							"path": [
 								"fhir",
 								"r4",
-								"Codesystem",
-								"action-condition-kind|4.0.1",
-								"%24lookup"
+								"Codesystem"
 							],
 							"query": [
 								{
-									"key": "code",
-									"value": "applicability"
+									"key": "url",
+									"value": "http://hl7.org/fhir/account-status"
 								}
 							]
 						}
@@ -61,7 +59,7 @@
 					"response": []
 				},
 				{
-					"name": "$lookup System Query",
+					"name": "$lookup",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -93,7 +91,36 @@
 					"response": []
 				},
 				{
-					"name": "$lookup JSON",
+					"name": "$lookup (ID)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/fhir/r4/Codesystem/action-condition-kind|4.0.1/%24lookup?code=applicability",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"fhir",
+								"r4",
+								"Codesystem",
+								"action-condition-kind|4.0.1",
+								"%24lookup"
+							],
+							"query": [
+								{
+									"key": "code",
+									"value": "applicability"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "$lookup",
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -124,46 +151,12 @@
 					"response": []
 				},
 				{
-					"name": "$lookup XML",
-					"request": {
-						"auth": {
-							"type": "noauth"
-						},
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "<Parameters xmlns=\"http://hl7.org/fhir\">\r\n  <parameter>\r\n    <name value=\"coding\"/>\r\n    <valueCoding>\r\n        <system value=\"http://hl7.org/fhir/action-condition-kind\"/>\r\n        <code value=\"applicability\"/>\r\n    </valueCoding>\r\n  </parameter>\r\n</Parameters>",
-							"options": {
-								"raw": {
-									"language": "xml"
-								}
-							}
-						},
-						"url": {
-							"raw": "http://localhost:9090/fhir/r4/Codesystem/%24lookup",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "9090",
-							"path": [
-								"fhir",
-								"r4",
-								"Codesystem",
-								"%24lookup"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "$subsumes",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:9090/fhir/r4/Codesystem/%24subsumes?system=http://hl7.org/fhir/abstract-types&version=4.0.1&codeA=Any&codeB=Type",
+							"raw": "http://localhost:9090/fhir/r4/Codesystem/%24subsumes?system=http://hl7.org/fhir/abstract-types&codeA=Type&codeB=Type",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -181,12 +174,8 @@
 									"value": "http://hl7.org/fhir/abstract-types"
 								},
 								{
-									"key": "version",
-									"value": "4.0.1"
-								},
-								{
 									"key": "codeA",
-									"value": "Any"
+									"value": "Type"
 								},
 								{
 									"key": "codeB",
@@ -227,14 +216,6 @@
 						}
 					},
 					"response": []
-				},
-				{
-					"name": "Search Code System",
-					"request": {
-						"method": "GET",
-						"header": []
-					},
-					"response": []
 				}
 			]
 		},
@@ -264,12 +245,12 @@
 					"response": []
 				},
 				{
-					"name": "$expand URL",
+					"name": "Search",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:9090/fhir/r4/Valueset/account-status|4.0.1/%24expand",
+							"raw": "http://localhost:9090/fhir/r4/Valueset/account-status|4.0.1",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -279,20 +260,19 @@
 								"fhir",
 								"r4",
 								"Valueset",
-								"account-status|4.0.1",
-								"%24expand"
+								"account-status|4.0.1"
 							]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "$expand Query",
+					"name": "$expand",
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:9090/fhir/r4/Valueset/%24expand?url=http://hl7.org/fhir/ValueSet/account-status&filter=account&displayLanguage=de&offset=0&count=2",
+							"raw": "http://localhost:9090/fhir/r4/Valueset/%24expand?url=http://hl7.org/fhir/ValueSet/account-status",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -308,22 +288,35 @@
 								{
 									"key": "url",
 									"value": "http://hl7.org/fhir/ValueSet/account-status"
-								},
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "$expand (ID)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/fhir/r4/Valueset/account-status/%24expand?filter=account",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"fhir",
+								"r4",
+								"Valueset",
+								"account-status",
+								"%24expand"
+							],
+							"query": [
 								{
 									"key": "filter",
 									"value": "account"
-								},
-								{
-									"key": "displayLanguage",
-									"value": "de"
-								},
-								{
-									"key": "offset",
-									"value": "0"
-								},
-								{
-									"key": "count",
-									"value": "2"
 								}
 							]
 						}
@@ -337,7 +330,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"resourceType\": \"Parameters\",\r\n  \"parameter\": [\r\n    {\r\n      \"name\": \"valueSet\",\r\n      \"resource\": {\r\n        \"resourceType\": \"ValueSet\",\r\n        \"id\": \"account-status\",\r\n        \"url\": \"http://hl7.org/fhir/ValueSet/account-status\",\r\n        \"version\": \"4.0.1\",\r\n        \"status\": \"draft\",\r\n        \"date\": \"2019-11-01T09:29:23+11:00\",\r\n        \"description\": \"Defines the status of an account.\",\r\n        \"compose\": {\r\n          \"include\": [\r\n            {\r\n              \"system\": \"http://hl7.org/fhir/account-status\",\r\n              \"concept\": [\r\n                {\r\n                  \"code\": \"active\",\r\n                  \"display\": \"Active\"\r\n                },\r\n                {\r\n                  \"code\": \"suspended\",\r\n                  \"display\": \"Suspended\"\r\n                },\r\n                {\r\n                  \"code\": \"inactive\",\r\n                  \"display\": \"Inactive\"\r\n                }\r\n              ]\r\n            }\r\n          ]\r\n        }\r\n      }\r\n    }\r\n  ]\r\n}\r\n",
+							"raw": "{\r\n  \"resourceType\": \"Parameters\",\r\n  \"meta\": {\r\n    \"profile\": [\"http://hl7.org/fhir/StructureDefinition/Parameters\"]\r\n  },\r\n  \"parameter\": [\r\n    {\r\n      \"name\": \"coding\",\r\n      \"valueCoding\": {\r\n        \"system\": \"http://hl7.org/fhir/account-status\",\r\n        \"code\": \"inactive\",\r\n        \"display\": \"Inactive\"\r\n      }\r\n    },\r\n    {\r\n      \"name\": \"valueSet\",\r\n      \"resource\": {\r\n        \"resourceType\": \"ValueSet\",\r\n        \"id\": \"account-status\",\r\n        \"meta\": {\r\n          \"lastUpdated\": \"2019-11-01T09:29:23.356+11:00\",\r\n          \"profile\": [\r\n            \"http://hl7.org/fhir/StructureDefinition/shareablevalueset\"\r\n          ]\r\n        },\r\n        \"text\": {\r\n          \"status\": \"generated\",\r\n          \"div\": \"<div xmlns=\\\"http://www.w3.org/1999/xhtml\\\"><h2>AccountStatus</h2><div><p>Indicates whether the account is available to be used.</p>\\n</div><p>This value set includes codes from the following code systems:</p><ul><li>Include all codes defined in <a href=\\\"codesystem-account-status.html\\\"><code>http://hl7.org/fhir/account-status</code></a></li></ul></div>\"\r\n        },\r\n        \"extension\": [\r\n          {\r\n            \"url\": \"http://hl7.org/fhir/StructureDefinition/structuredefinition-wg\",\r\n            \"valueCode\": \"pa\"\r\n          },\r\n          {\r\n            \"url\": \"http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status\",\r\n            \"valueCode\": \"trial-use\"\r\n          },\r\n          {\r\n            \"url\": \"http://hl7.org/fhir/StructureDefinition/structuredefinition-fmm\",\r\n            \"valueInteger\": 2\r\n          }\r\n        ],\r\n        \"url\": \"http://hl7.org/fhir/ValueSet/account-status\",\r\n        \"identifier\": [\r\n          {\r\n            \"system\": \"urn:ietf:rfc:3986\",\r\n            \"value\": \"urn:oid:2.16.840.1.113883.4.642.3.726\"\r\n          }\r\n        ],\r\n        \"version\": \"4.0.1\",\r\n        \"name\": \"AccountStatus\",\r\n        \"title\": \"AccountStatus\",\r\n        \"status\": \"draft\",\r\n        \"experimental\": false,\r\n        \"date\": \"2019-11-01T09:29:23+11:00\",\r\n        \"publisher\": \"HL7 (FHIR Project)\",\r\n        \"contact\": [\r\n          {\r\n            \"telecom\": [\r\n              {\r\n                \"system\": \"url\",\r\n                \"value\": \"http://hl7.org/fhir\"\r\n              },\r\n              {\r\n                \"system\": \"email\",\r\n                \"value\": \"fhir@lists.hl7.org\"\r\n              }\r\n            ]\r\n          }\r\n        ],\r\n        \"description\": \"Indicates whether the account is available to be used.\",\r\n        \"immutable\": true,\r\n        \"compose\": {\r\n          \"include\": [\r\n            {\r\n              \"system\": \"http://hl7.org/fhir/account-status\"\r\n            }\r\n          ]\r\n        }\r\n      }\r\n    }\r\n  ]\r\n}\r\n",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -345,7 +338,7 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:9090/fhir/r4/Valueset/%24expand",
+							"raw": "http://localhost:9090/fhir/r4/Valueset/%24expand?filter=account",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -356,34 +349,11 @@
 								"r4",
 								"Valueset",
 								"%24expand"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "$validate-code URL",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:9090/fhir/r4/Valueset/account-status|4.0.1/%24validate-code?code=inactive",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "9090",
-							"path": [
-								"fhir",
-								"r4",
-								"Valueset",
-								"account-status|4.0.1",
-								"%24validate-code"
 							],
 							"query": [
 								{
-									"key": "code",
-									"value": "inactive"
+									"key": "filter",
+									"value": "account"
 								}
 							]
 						}
@@ -391,7 +361,7 @@
 					"response": []
 				},
 				{
-					"name": "$validate-code Query",
+					"name": "$validate-code",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -423,7 +393,71 @@
 					"response": []
 				},
 				{
+					"name": "$validate-code (ID)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9090/fhir/r4/Valueset/account-status/%24validate-code?code=inactive&display=test",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"fhir",
+								"r4",
+								"Valueset",
+								"account-status",
+								"%24validate-code"
+							],
+							"query": [
+								{
+									"key": "code",
+									"value": "inactive"
+								},
+								{
+									"key": "display",
+									"value": "test"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "$validate-code",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"resourceType\": \"Parameters\",\r\n  \"meta\": {\r\n    \"profile\": [\"http://hl7.org/fhir/StructureDefinition/Parameters\"]\r\n  },\r\n  \"parameter\": [\r\n    {\r\n      \"name\": \"codeableConcept\",\r\n      \"valueCodeableConcept\": {\r\n        \"coding\": [\r\n          {\r\n            \"system\": \"http://hl7.org/fhir/account-status\",\r\n            \"code\": \"active\",\r\n            \"display\": \"Active\"\r\n          }\r\n        ],\r\n        \"text\": \"Active Account Status\"\r\n      }\r\n    },\r\n    {\r\n      \"name\": \"valueSet\",\r\n      \"resource\": {\r\n        \"resourceType\": \"ValueSet\",\r\n        \"id\": \"account-status\",\r\n        \"meta\": {\r\n          \"lastUpdated\": \"2019-11-01T09:29:23.356+11:00\",\r\n          \"profile\": [\r\n            \"http://hl7.org/fhir/StructureDefinition/shareablevalueset\"\r\n          ]\r\n        },\r\n        \"text\": {\r\n          \"status\": \"generated\",\r\n          \"div\": \"<div xmlns=\\\"http://www.w3.org/1999/xhtml\\\"><h2>AccountStatus</h2><div><p>Indicates whether the account is available to be used.</p>\\n</div><p>This value set includes codes from the following code systems:</p><ul><li>Include all codes defined in <a href=\\\"codesystem-account-status.html\\\"><code>http://hl7.org/fhir/account-status</code></a></li></ul></div>\"\r\n        },\r\n        \"extension\": [\r\n          {\r\n            \"url\": \"http://hl7.org/fhir/StructureDefinition/structuredefinition-wg\",\r\n            \"valueCode\": \"pa\"\r\n          },\r\n          {\r\n            \"url\": \"http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status\",\r\n            \"valueCode\": \"trial-use\"\r\n          },\r\n          {\r\n            \"url\": \"http://hl7.org/fhir/StructureDefinition/structuredefinition-fmm\",\r\n            \"valueInteger\": 2\r\n          }\r\n        ],\r\n        \"url\": \"http://hl7.org/fhir/ValueSet/account-status\",\r\n        \"identifier\": [\r\n          {\r\n            \"system\": \"urn:ietf:rfc:3986\",\r\n            \"value\": \"urn:oid:2.16.840.1.113883.4.642.3.726\"\r\n          }\r\n        ],\r\n        \"version\": \"4.0.1\",\r\n        \"name\": \"AccountStatus\",\r\n        \"title\": \"AccountStatus\",\r\n        \"status\": \"draft\",\r\n        \"experimental\": false,\r\n        \"date\": \"2019-11-01T09:29:23+11:00\",\r\n        \"publisher\": \"HL7 (FHIR Project)\",\r\n        \"contact\": [\r\n          {\r\n            \"telecom\": [\r\n              {\r\n                \"system\": \"url\",\r\n                \"value\": \"http://hl7.org/fhir\"\r\n              },\r\n              {\r\n                \"system\": \"email\",\r\n                \"value\": \"fhir@lists.hl7.org\"\r\n              }\r\n            ]\r\n          }\r\n        ],\r\n        \"description\": \"Indicates whether the account is available to be used.\",\r\n        \"immutable\": true,\r\n        \"compose\": {\r\n          \"include\": [\r\n            {\r\n              \"system\": \"http://hl7.org/fhir/account-status\"\r\n            }\r\n          ]\r\n        }\r\n      }\r\n    }\r\n  ]\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:9090/fhir/r4/Valueset/%24validate-code",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9090",
+							"path": [
+								"fhir",
+								"r4",
+								"Valueset",
+								"%24validate-code"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Batch Validation",
 					"request": {
 						"method": "POST",
 						"header": [],
