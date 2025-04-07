@@ -458,26 +458,26 @@ public isolated function batchValidateValueSets(http:Request request) returns r4
     json|error payload = request.getJsonPayload();
     if payload is error {
         return r4:createFHIRError(
-            "Invalid or empty request payload",
-            r4:ERROR,
-            r4:INVALID_REQUIRED,
-            httpStatusCode = http:STATUS_BAD_REQUEST);
+                "Invalid or empty request payload",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                httpStatusCode = http:STATUS_BAD_REQUEST);
     }
 
     r4:Bundle|error bundleIn = payload.cloneWithType(r4:Bundle);
     if bundleIn is error {
         return r4:createFHIRError(
-            "Cannot parse request as a FHIR Bundle",
-            r4:ERROR,
-            r4:INVALID_REQUIRED,
-            httpStatusCode = http:STATUS_BAD_REQUEST);
+                "Cannot parse request as a FHIR Bundle",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                httpStatusCode = http:STATUS_BAD_REQUEST);
     }
     if bundleIn.'type != r4:BUNDLE_TYPE_BATCH {
         return r4:createFHIRError(
-            "Not a batch type bundle",
-            r4:ERROR,
-            r4:INVALID_REQUIRED,
-            httpStatusCode = http:STATUS_BAD_REQUEST);
+                "Not a batch type bundle",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                httpStatusCode = http:STATUS_BAD_REQUEST);
     }
 
     r4:BundleEntry[] responseEntries = [];
@@ -505,10 +505,12 @@ public isolated function batchValidateValueSets(http:Request request) returns r4
                         'resource: <international401:Parameters>{
                             'parameter: [
                                 {
-                                    name: "result", valueBoolean: false
-                                }, 
+                                    name: "result",
+                                    valueBoolean: false
+                                },
                                 {
-                                    name: "message", valueString: result.message()
+                                    name: "message",
+                                    valueString: result.message()
                                 }
                             ]
                         }
@@ -518,10 +520,10 @@ public isolated function batchValidateValueSets(http:Request request) returns r4
         }
     } else {
         return r4:createFHIRError(
-            "No entries in the bundle",
-            r4:ERROR,
-            r4:INVALID_REQUIRED,
-            httpStatusCode = http:STATUS_BAD_REQUEST);
+                "No entries in the bundle",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                httpStatusCode = http:STATUS_BAD_REQUEST);
     }
 
     return {
@@ -530,10 +532,66 @@ public isolated function batchValidateValueSets(http:Request request) returns r4
     };
 }
 
+public isolated function addValueSet(http:Request valueSetPayload) returns r4:FHIRError? {
+    // check whether the payload is a valid FHIR ValueSet
+    json|error jsonPayload = valueSetPayload.getJsonPayload();
+    if jsonPayload is json {
+        r4:ValueSet|error valueSet = jsonPayload.cloneWithType(r4:ValueSet);
+        if valueSet is error {
+            return r4:createFHIRError(
+                    "Invalid request payload",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = valueSet,
+                    httpStatusCode = http:STATUS_BAD_REQUEST);
+        }
+        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
+            return terminology:addValueSet(valueSet, terminology = terminology_source);
+        } else {
+            return terminology:addValueSet(valueSet);
+        }
+    } else {
+        return r4:createFHIRError(
+                "Invalid or empty request payload",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                cause = jsonPayload,
+                httpStatusCode = http:STATUS_BAD_REQUEST);
+    }
+}
+
+public isolated function addCodeSystem(http:Request codeSystemPayload) returns r4:FHIRError? {
+    // Check whether the payload is a valid FHIR CodeSystem
+    json|error jsonPayload = codeSystemPayload.getJsonPayload();
+    if jsonPayload is json {
+        r4:CodeSystem|error codeSystem = jsonPayload.cloneWithType(r4:CodeSystem);
+        if codeSystem is error {
+            return r4:createFHIRError(
+                    "Invalid request payload",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = codeSystem,
+                    httpStatusCode = http:STATUS_BAD_REQUEST);
+        }
+        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
+            return terminology:addCodeSystem(codeSystem, terminology = terminology_source);
+        } else {
+            return terminology:addCodeSystem(codeSystem);
+        }
+    } else {
+        return r4:createFHIRError(
+                "Invalid or empty request payload",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                cause = jsonPayload,
+                httpStatusCode = http:STATUS_BAD_REQUEST);
+    }
+}
+
 isolated function getSystemAndCode(string input) returns map<string> {
     // Split the string at '?' to separate the base URL and query parameters
-    string[] parts = regex:split(input, string `\?`);
-    
+    string[] parts = regex:split(input, string `?`);
+
     if parts.length() < 2 {
         return {};
     }
@@ -558,5 +616,5 @@ isolated function getSystemAndCode(string input) returns map<string> {
         }
     }
 
-    return { "system": system, "code": code };
+    return {"system": system, "code": code};
 }
