@@ -590,7 +590,7 @@ public isolated function addCodeSystem(http:Request codeSystemPayload) returns r
 
 isolated function getSystemAndCode(string input) returns map<string> {
     // Split the string at '?' to separate the base URL and query parameters
-    string[] parts = regex:split(input, string `?`);
+    string[] parts = regex:split(input, string `\?`);
 
     if parts.length() < 2 {
         return {};

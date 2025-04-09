@@ -572,3 +572,93 @@ public function testBatchValidateValueSetsNoEntries() returns error? {
     expected.issue[0].diagnostics = (<r4:OperationOutcomeIssue[]>actual.issue)[0].diagnostics;
     test:assertEquals(actual, expected);
 }
+
+@test:Config {
+    groups: ["codesystem", "add_codesystem", "successful_scenario"]
+}
+public function testAddValidCodeSystem() returns error? {
+    json requestPayload = returnCodeSystemData("add-valid-codesystem");
+
+    http:Response response = check csClient->post("/", requestPayload);
+
+    // check the response status code is 201 or not
+    test:assertEquals(response.statusCode, 201);
+}
+
+@test:Config {
+    groups: ["codesystem", "add_codesystem", "failure_scenario"]
+}
+public function testAddInvalidCodeSystem() returns error? {
+    json codingJson = returnCodeSystemData("add-invalid-codesystem");
+    http:Response response = check csClient->post("/", codingJson);
+
+    json actualJson = check response.getJsonPayload();
+    r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
+
+    json expectedjson = returnCodeSystemData("add-invalid-codesystem-response");
+    r4:OperationOutcome expected = check expectedjson.cloneWithType(r4:OperationOutcome);
+
+    expected.issue[0].diagnostics = (<r4:OperationOutcomeIssue[]>actual.issue)[0].diagnostics;
+    test:assertEquals(actual, expected);
+}
+
+@test:Config {
+    groups: ["codesystem", "add_codesystem", "failure_scenario"]
+}
+public function testAddEmptyCodeSystemPayload() returns error? {
+    http:Response response = check csClient->post("/", {});
+
+    json actualJson = check response.getJsonPayload();
+    r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
+
+    json expectedjson = returnCodeSystemData("add-invalid-codesystem-response");
+    r4:OperationOutcome expected = check expectedjson.cloneWithType(r4:OperationOutcome);
+
+    expected.issue[0].diagnostics = (<r4:OperationOutcomeIssue[]>actual.issue)[0].diagnostics;
+    test:assertEquals(actual, expected);
+}
+
+@test:Config {
+    groups: ["valueset", "add_valueset", "successful_scenario"]
+}
+public function testAddValidValueSet() returns error? {
+    json requestPayload = returnValueSetData("add-valid-valueset");
+
+    http:Response response = check vsClient->post("/", requestPayload);
+
+    // check the response status code is 201 or not
+    test:assertEquals(response.statusCode, 201);
+}
+
+@test:Config {
+    groups: ["valueset", "add_valueset", "failure_scenario"]
+}
+public function testAddInvalidValueSet() returns error? {
+    json valueSetJson = returnValueSetData("add-invalid-valueset");
+    http:Response response = check vsClient->post("/", valueSetJson);
+
+    json actualJson = check response.getJsonPayload();
+    r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
+
+    json expectedJson = returnValueSetData("add-invalid-valueset-response");
+    r4:OperationOutcome expected = check expectedJson.cloneWithType(r4:OperationOutcome);
+
+    expected.issue[0].diagnostics = (<r4:OperationOutcomeIssue[]>actual.issue)[0].diagnostics;
+    test:assertEquals(actual, expected);
+}
+
+@test:Config {
+    groups: ["valueset", "add_valueset", "failure_scenario"]
+}
+public function testAddEmptyValueSetPayload() returns error? {
+    http:Response response = check vsClient->post("/", {});
+
+    json actualJson = check response.getJsonPayload();
+    r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
+
+    json expectedJson = returnValueSetData("add-invalid-valueset-response");
+    r4:OperationOutcome expected = check expectedJson.cloneWithType(r4:OperationOutcome);
+
+    expected.issue[0].diagnostics = (<r4:OperationOutcomeIssue[]>actual.issue)[0].diagnostics;
+    test:assertEquals(actual, expected);
+}
