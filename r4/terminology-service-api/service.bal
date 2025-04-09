@@ -93,8 +93,7 @@ service http:InterceptableService / on interceptorListener {
 
     // ===============================================================================================================================
 
-    isolated
-    resource function get fhir/r4/Codesystem/\$lookup(http:RequestContext ctx, http:Request request) returns json|xml|r4:FHIRError {
+    isolated resource function get fhir/r4/Codesystem/\$lookup(http:RequestContext ctx, http:Request request) returns json|xml|r4:FHIRError {
         log:printDebug(string `FHIR Terminology request is received. Interaction: CodeSystem Lookup`);
 
         international401:Parameters codeSystemLookUpResult = check codeSystemLookUpGet(ctx, request);
@@ -129,14 +128,14 @@ service http:InterceptableService / on interceptorListener {
     }
 
     isolated resource function get fhir/r4/Codesystem/[string id]/\$lookup(http:RequestContext ctx, http:Request request) returns json|xml|r4:FHIRError {
-        log:printDebug(string `FHIR Terminology request is received. Interaction: CodeSystem Lookup with Id:     ${id}    `);
+        log:printDebug(string `FHIR Terminology request is received. Interaction: CodeSystem Lookup with Id: ${id}`);
 
         international401:Parameters codeSystemLookUpResult = check codeSystemLookUpGet(ctx, request, id);
         return codeSystemLookUpResult.toJson();
     }
 
     isolated resource function get fhir/r4/Codesystem/[string id](http:RequestContext ctx, http:Request request) returns json|xml|r4:FHIRError {
-        log:printDebug(string `FHIR Terminology request is received. Interaction: CodeSystem Get with Id:     ${id}    `);
+        log:printDebug(string `FHIR Terminology request is received. Interaction: CodeSystem Get with Id: ${id}`);
 
         r4:CodeSystem codeSystem = check readCodeSystemById(id);
         return codeSystem.toJson();
