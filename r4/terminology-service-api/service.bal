@@ -3,12 +3,20 @@ import ballerina/log;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 
-listener http:Listener interceptorListener = new (9090);
+listener http:Listener interceptorListener = new (9089);
 
 service http:InterceptableService / on interceptorListener {
 
     public function createInterceptors() returns FHIRResponseErrorInterceptor {
         return new FHIRResponseErrorInterceptor();
+    }
+
+    isolated resource function head fhir/r4(http:RequestContext ctx, http:Request request) returns http:Response {
+        log:printDebug("Health check request received.");
+
+        http:Response response = new;
+        response.statusCode = http:STATUS_OK;
+        return response;
     }
 
     isolated resource function get fhir/r4/ValueSet/\$expand(http:RequestContext ctx, http:Request request) returns json|xml|r4:FHIRError {
