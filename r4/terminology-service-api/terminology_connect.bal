@@ -5,8 +5,10 @@ import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
 
+final TerminologySource db_terminology_source = new ();
+
 // Constants
-final terminology:Terminology? terminology_source = ();
+final terminology:Terminology? terminology_source = db_terminology_source;
 final boolean IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED = terminology_source is terminology:Terminology;
 
 public isolated function readCodeSystemById(string id) returns r4:FHIRError|r4:CodeSystem|r4:FHIRError {
