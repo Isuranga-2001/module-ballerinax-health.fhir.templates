@@ -2,8 +2,11 @@ import terminology_service_api.store;
 
 import ballerina/http;
 import ballerina/persist;
+import ballerina/sql;
 import ballerinax/health.fhir.r4;
+import ballerinax/health.fhir.r4.parser;
 import ballerinax/health.fhir.r4.terminology;
+import ballerina/lang.regexp;
 
 final store:Client sClient = check new ();
 
@@ -11,30 +14,33 @@ public isolated class TerminologySource {
     *terminology:Terminology;
 
     public isolated function addCodeSystem(r4:CodeSystem codeSystem) returns r4:FHIRError? {
-        // check if the code system already exists
-        stream<record {|string id;|}, persist:Error?> dbCodeSystems = sClient->/codesystems();
+        if codeSystem.id !is () {
+            r4:CodeSystem|r4:FHIRError|error dbCodeSystem = getCodeSystemByID(<string>codeSystem.id, codeSystem.version);
 
-        persist:Error? unionResult = from var dbCodeSystem in dbCodeSystems
-            do {
-                if (dbCodeSystem.id == codeSystem.id) {
-                    // code system already exists
-                    return r4:createFHIRError(
-                            "CodeSystem Already Exists",
-                            r4:ERROR,
-                            r4:INVALID_REQUIRED,
-                            cause = error("CodeSystem already exists"),
-                            httpStatusCode = http:STATUS_BAD_REQUEST);
-                }
-            };
+            if dbCodeSystem is r4:FHIRError {
+                // error while checking code system existence
+                return dbCodeSystem;
+            }
 
-        if (unionResult is persist:Error) {
-            // error while checking code system existence
-            return r4:createFHIRError(
-                    "Error while checking CodeSystem existence",
-                    r4:ERROR,
-                    r4:INVALID_REQUIRED,
-                    cause = error("Error while checking CodeSystem existence"),
-                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+            if dbCodeSystem is error {
+                // error while checking code system existence
+                return r4:createFHIRError(
+                        "Error while checking CodeSystem existence",
+                        r4:ERROR,
+                        r4:INVALID_REQUIRED,
+                        cause = dbCodeSystem,
+                        httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+            } 
+            
+            if dbCodeSystem.status != "unknown" {
+                // code system already exists
+                return r4:createFHIRError(
+                        "CodeSystem Already Exists",
+                        r4:ERROR,
+                        r4:INVALID_REQUIRED,
+                        cause = error("CodeSystem already exists"),
+                        httpStatusCode = http:STATUS_BAD_REQUEST);
+            }
         }
 
         // add the code system to the database
@@ -155,12 +161,95 @@ public isolated class TerminologySource {
     }
 
     public isolated function findCodeSystem(r4:uri? system, string? id, string? version) returns r4:CodeSystem|r4:FHIRError {
+        if id != () {
+            r4:CodeSystem|r4:FHIRError|error dbCodeSystem;
+            if version != () {
+                dbCodeSystem = getCodeSystemByID(id, version);
+            } else {
+                dbCodeSystem = getCodeSystemByID(id);
+            }
+
+            if dbCodeSystem is r4:FHIRError {
+                return dbCodeSystem;
+            }
+
+            if dbCodeSystem is error {
+                return r4:createFHIRError(
+                        string `Unknown CodeSystem Id: '${id}'`,
+                        r4:ERROR,
+                        r4:PROCESSING_NOT_FOUND,
+                        cause = dbCodeSystem,
+                        httpStatusCode = http:STATUS_NOT_FOUND
+                    );
+            }
+            
+            return dbCodeSystem;
+        }
+
+        stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems.get();
+
+        map<r4:CodeSystem> codeSystems = check from var codeSystem in codeSystemStream
+            do {
+                if (codeSystem.codeSystem is r4:CodeSystem) {
+                    string codeSystemId = <string>codeSystem.codeSystem.id;
+                    string codeSystemVersion = <string>codeSystem.codeSystem.version;
+                    string codeSystemKey = codeSystemId + "|" + codeSystemVersion;
+                    r4:CodeSystem parsedCodeSystem = check parser:parse(codeSystem.codeSystem.toJson()).ensureType();
+                    return {codeSystemKey: parsedCodeSystem};
+                }
+            } ?: error("");
+
+
+
+        boolean isIdExistInRegistry = false;
+        if version is string && system != () {
+            foreach var item in codeSystems.keys() {
+                if regexp:isFullMatch(re `${system}\|${version}$`, item) && codeSystems[item] is r4:CodeSystem {
+                    return <r4:CodeSystem>codeSystems[item].clone();
+                } else if regexp:isFullMatch(re `${system}\|.*`, item) {
+                    isIdExistInRegistry = true;
+                }
+            }
+
+            if isIdExistInRegistry {
+                return r4:createFHIRError(
+                            string `Unknown version: '${version}',`,
+                        r4:ERROR,
+                        r4:PROCESSING_NOT_FOUND,
+                        diagnostic = string `: there is a CodeSystem in the registry with Id: '${system.toString()}' but cannot find version: '${version}' of it.`,
+                        httpStatusCode = http:STATUS_NOT_FOUND
+                        );
+            }
+        } else if system != () {
+            r4:CodeSystem codeSystem = {content: "example", status: "unknown"};
+            string latestVersion = terminology:DEFAULT_VERSION;
+            foreach var item in codeSystems.keys() {
+                if regexp:isFullMatch(re `${system}\|.*`, item)
+                && codeSystems[item] is r4:CodeSystem
+                && (<r4:CodeSystem>codeSystems[item]).version > latestVersion {
+                    codeSystem = <r4:CodeSystem>codeSystems[item];
+                    latestVersion = codeSystem.version ?: terminology:DEFAULT_VERSION;
+                    isIdExistInRegistry = true;
+                }
+            }
+
+            if isIdExistInRegistry {
+                return codeSystem.clone();
+            } else {
+                return r4:createFHIRError(
+                            string `Unknown CodeSystem: '${system.toBalString()}'`,
+                        r4:ERROR,
+                        r4:PROCESSING_NOT_FOUND,
+                        httpStatusCode = http:STATUS_NOT_FOUND
+                        );
+            }
+        }
         return r4:createFHIRError(
-                "CodeSystem not found",
+                string `Unknown CodeSystem: '${system.toBalString()}'`,
                 r4:ERROR,
-                r4:INVALID_REQUIRED,
-                cause = error("No matching CodeSystem found"),
-                httpStatusCode = http:STATUS_NOT_FOUND);
+                r4:PROCESSING_NOT_FOUND,
+                httpStatusCode = http:STATUS_NOT_FOUND
+            );
     }
 
     public isolated function findConcept(r4:uri system, r4:code code, string? version) returns terminology:CodeConceptDetails|r4:FHIRError {
@@ -220,4 +309,14 @@ public isolated class TerminologySource {
     public isolated function searchValueSet(map<r4:RequestSearchParameter[]> params, int? offset, int? count) returns r4:ValueSet[]|r4:FHIRError {
         return [];
     }
+}
+
+isolated function getCodeSystemByID(string id, string? version = ()) returns r4:CodeSystem|r4:FHIRError|persist:Error|error {
+    sql:ParameterizedQuery sqlQuery = `SELECT * FROM codesystems WHERE id = ${id}${version is () ? "" : string ` AND version = ${version}`}`;
+
+    stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->queryNativeSQL(sqlQuery, store:CodeSystem);
+    store:CodeSystem[] codeSystems = check from var codeSystem in codeSystemStream select codeSystem;
+
+    r4:CodeSystem parsedCodeSystem = check parser:parse(codeSystems[0].codeSystem.toJson()).ensureType();
+    return parsedCodeSystem;
 }

@@ -443,6 +443,9 @@ dependencies = [
 	{org = "ballerinax", name = "health.fhir.r4"},
 	{org = "ballerinax", name = "health.fhir.r4.international401"}
 ]
+modules = [
+	{org = "ballerinax", packageName = "health.fhir.r4.parser", moduleName = "health.fhir.r4.parser"}
+]
 
 [[package]]
 org = "ballerinax"
@@ -548,6 +551,7 @@ dependencies = [
 	{org = "ballerinax", name = "h2.driver"},
 	{org = "ballerinax", name = "health.fhir.r4"},
 	{org = "ballerinax", name = "health.fhir.r4.international401"},
+	{org = "ballerinax", name = "health.fhir.r4.parser"},
 	{org = "ballerinax", name = "health.fhir.r4.terminology"},
 	{org = "ballerinax", name = "java.jdbc"},
 	{org = "ballerinax", name = "mysql"},
