@@ -5,7 +5,6 @@ import ballerina/persist;
 // import ballerina/regex;
 import ballerina/sql;
 import ballerinax/health.fhir.r4;
-import ballerinax/health.fhir.r4.parser;
 import ballerinax/health.fhir.r4.terminology;
 import ballerina/io;
 
@@ -47,7 +46,7 @@ public isolated class TerminologySource {
             status: codeSystem.status,
             date: codeSystem.date ?: "",
             publisher: codeSystem.publisher ?: "",
-            codeSystem: codeSystem.toJson().toString().toBytes()
+            codeSystem: check CodeSystemToByte(codeSystem)
         };
 
         int[]|persist:Error response = sClient->/codesystems.post([dbCodeSystemInsert]);
@@ -298,10 +297,7 @@ isolated function getAllCodeSystems() returns r4:CodeSystem[]|error {
     r4:CodeSystem[] codeSystemArray = [];
 
     foreach store:CodeSystem dbCodeSystem in dbCodeSystems {
-        io:println("CodeSystem Added: ", dbCodeSystem.id, " ", dbCodeSystem.version);
-        string codeSystemJsonString = check 'string:fromBytes(dbCodeSystem.codeSystem);
-
-        r4:CodeSystem|error parsedCodeSystem = parser:parse(codeSystemJsonString.toJson()).ensureType();
+        r4:CodeSystem|error parsedCodeSystem = ByteToCodeSystem(dbCodeSystem.codeSystem);
         if parsedCodeSystem is error {
             // skip this code system if parsing fails
             continue;
@@ -317,7 +313,7 @@ isolated function getAllCodeSystems() returns r4:CodeSystem[]|error {
 
 isolated function getCodeSystemByID(string id, string? version = ()) returns r4:CodeSystem|boolean|r4:FHIRError|persist:Error|error {
     sql:ParameterizedQuery sqlQuery = version is ()
-        ? `SELECT * FROM codesystems WHERE id = ${id} ORDER BY CAST(version AS DECIMAL) DESC LIMIT 1`
+        ? `SELECT * FROM codesystems WHERE id = ${id} ORDER BY version DESC LIMIT 1`
         : `SELECT * FROM codesystems WHERE id = ${id} AND version = ${version}`;
 
     stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->queryNativeSQL(sqlQuery, store:CodeSystem);
@@ -327,15 +323,12 @@ isolated function getCodeSystemByID(string id, string? version = ()) returns r4:
         return true;
     }
 
-    string codeSystemJsonString = check 'string:fromBytes(codeSystems[0].codeSystem);
-    r4:CodeSystem parsedCodeSystem = check parser:parse(codeSystemJsonString.toJson()).ensureType();
-
-    return parsedCodeSystem;
+    return ByteToCodeSystem(codeSystems[0].codeSystem);
 }
 
 isolated function getCodeSystemByURL(string system, string? version = ()) returns r4:CodeSystem|boolean|r4:FHIRError|persist:Error|error {
     sql:ParameterizedQuery sqlQuery = version is ()
-        ? `SELECT * FROM codesystems WHERE url = ${system} ORDER BY CAST(version AS DECIMAL) DESC LIMIT 1`
+        ? `SELECT * FROM codesystems WHERE url = ${system} ORDER BY version DESC LIMIT 1`
         : `SELECT * FROM codesystems WHERE url = ${system} AND version = ${version}`;
 
     stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->queryNativeSQL(sqlQuery, store:CodeSystem);
@@ -345,8 +338,5 @@ isolated function getCodeSystemByURL(string system, string? version = ()) return
         return true;
     }
 
-    string codeSystemJsonString = check 'string:fromBytes(codeSystems[0].codeSystem);
-    r4:CodeSystem parsedCodeSystem = check parser:parse(codeSystemJsonString.toJson()).ensureType();
-
-    return parsedCodeSystem;
+    return ByteToCodeSystem(codeSystems[0].codeSystem);
 }

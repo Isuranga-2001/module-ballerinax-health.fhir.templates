@@ -1,5 +1,7 @@
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
+import ballerinax/health.fhir.r4.parser;
+import ballerina/http;
 
 isolated function validationResultToParameters(international401:Parameters|r4:FHIRError concept) returns international401:Parameters|r4:FHIRError {
     international401:ParametersParameter[] params = [];
@@ -211,4 +213,29 @@ isolated function extractConceptsRecursive(r4:CodeSystemConcept var_concept, r4:
         }
     }
     return updatedAcc;
+}
+
+isolated function CodeSystemToByte(r4:CodeSystem codeSystem) returns byte[]|r4:FHIRError {
+    byte[] byteArray = codeSystem.toJsonString().toBytes();
+
+    // check whether the conversion was successful
+    r4:CodeSystem|error parsedcs = ByteToCodeSystem(byteArray);
+
+    if parsedcs is r4:CodeSystem {
+        return byteArray;
+    } else {
+        return r4:createFHIRError(
+                "Error while converting CodeSystem to byte, CodeSystem is not valid, " + parsedcs.message(),
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                cause = parsedcs,
+                httpStatusCode = http:STATUS_BAD_REQUEST);
+    }
+}
+
+isolated function ByteToCodeSystem(byte[] byteArray) returns r4:CodeSystem|error {
+    string codeSystemJsonString = check 'string:fromBytes(byteArray);
+    r4:CodeSystem parsedCodeSystem = check parser:parse(codeSystemJsonString).ensureType();
+
+    return parsedCodeSystem;
 }
