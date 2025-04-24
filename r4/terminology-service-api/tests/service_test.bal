@@ -4,9 +4,9 @@ import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
 
-http:Client baseClient = check new ("http://localhost:9090/fhir/r4");
-http:Client csClient = check new ("http://localhost:9090/fhir/r4/CodeSystem");
-http:Client vsClient = check new ("http://localhost:9090/fhir/r4/ValueSet");
+http:Client baseClient = check new ("http://localhost:9089/fhir/r4");
+http:Client csClient = check new ("http://localhost:9089/fhir/r4/CodeSystem");
+http:Client vsClient = check new ("http://localhost:9089/fhir/r4/ValueSet");
 
 @test:Config {
     groups: ["codesystem", "get_by_id_codesystem", "successful_scenario"]
