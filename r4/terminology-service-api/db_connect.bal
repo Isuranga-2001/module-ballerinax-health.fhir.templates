@@ -1,12 +1,12 @@
 import terminology_service_api.store;
 
 import ballerina/http;
+import ballerina/io;
 import ballerina/persist;
 // import ballerina/regex;
 import ballerina/sql;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.terminology;
-import ballerina/io;
 
 final store:Client sClient = check new ();
 
@@ -215,7 +215,7 @@ public isolated class TerminologySource {
 
     public isolated function isCodeSystemExist(r4:uri system, string version) returns boolean {
         r4:CodeSystem|boolean|r4:FHIRError|persist:Error|error result = getCodeSystemByURL(system, version);
-        
+
         if result is r4:CodeSystem {
             return true;
         }
@@ -240,43 +240,65 @@ public isolated class TerminologySource {
     }
 
     public isolated function searchCodeSystem(map<r4:RequestSearchParameter[]> params, int? offset, int? count) returns r4:CodeSystem[]|r4:FHIRError {
-        r4:CodeSystem[]|error getAllResult = getAllCodeSystems();
+        string whereClause = "";
 
-        if getAllResult is error {
-            return r4:createFHIRError(
-                    "Error while getting CodeSystems",
-                    r4:ERROR,
-                    r4:INVALID_REQUIRED,
-                    cause = getAllResult,
-                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
-        }
-
-        r4:CodeSystem[] codeSystemArray = getAllResult;
-        
         foreach var searchParam in params.keys() {
-            r4:RequestSearchParameter[] searchParamValues = params.cloneReadOnly()[searchParam] ?: [];
-            r4:CodeSystem[] filteredList = [];
+            if searchParam == "description" {
+                // Skip the description parameter as it is not part of the model
+                continue;
+            }
+
+            r4:RequestSearchParameter[] searchParamValues = params[searchParam] ?: [];
             if searchParamValues.length() != 0 {
+                string paramCondition = "(";
+                string columnName = terminology:CODESYSTEMS_SEARCH_PARAMS.get(searchParam);
+                // if searchParam == "system" {
+                //     // Convert system to url
+                //     columnName = "url";
+                // }
                 foreach var queriedValue in searchParamValues {
-                    r4:CodeSystem[] result = from r4:CodeSystem entry in codeSystemArray
-                        where entry[terminology:CODESYSTEMS_SEARCH_PARAMS.get(searchParam)] == queriedValue.value
-                        select entry;
-                    filteredList.push(...result);
+                    paramCondition += columnName + " = '" + queriedValue.value + "' OR ";
                 }
-                codeSystemArray = filteredList;
+                paramCondition = paramCondition.substring(0, paramCondition.length() - 4) + ")"; // Remove trailing " OR "
+                whereClause += paramCondition + " AND ";
             }
         }
 
-        int total = codeSystemArray.length();
-        int validatedCount = count ?: terminology:TERMINOLOGY_SEARCH_DEFAULT_COUNT;
+        whereClause = whereClause.substring(0, whereClause.length() - 5); // Remove trailing " AND "
 
-        if total >= offset + validatedCount {
-            return codeSystemArray.slice(offset ?: 0, (offset ?: 0) + validatedCount).clone();
-        } else if total >= offset {
-            return codeSystemArray.slice(offset ?: 0).clone();
-        } else {
-            return [];
+        sql:ParameterizedQuery sqlQuery = `SELECT * FROM codesystems WHERE ${whereClause} LIMIT ${count} OFFSET ${offset}`;
+
+        io:println("SQL Query strings: ", sqlQuery.strings);
+        io:println("SQL Query insertions: ", sqlQuery.insertions);
+        io:println("SQL Query: ", sqlQuery);
+
+        stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->queryNativeSQL(sqlQuery);
+        store:CodeSystem[]|error dbCodeSystems = StreamToStoreCodeSystem(codeSystemStream);
+
+        if dbCodeSystems is error {
+            return r4:createFHIRError(
+                    dbCodeSystems.message(),
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = dbCodeSystems,
+                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
         }
+
+        io:println("CodeSystem count: ", dbCodeSystems.length());
+        io:println(dbCodeSystems);
+
+        r4:CodeSystem[] codeSystemArray = [];
+        foreach store:CodeSystem dbCodeSystem in dbCodeSystems {
+            r4:CodeSystem|error parsedCodeSystem = ByteToCodeSystem(dbCodeSystem.codeSystem);
+            if parsedCodeSystem is error {
+                // Skip this CodeSystem if parsing fails
+                io:println("Error while parsing CodeSystem: ", parsedCodeSystem.message());
+                continue;
+            }
+            codeSystemArray.push(parsedCodeSystem);
+        }
+
+        return codeSystemArray;
     }
 
     public isolated function searchValueSet(map<r4:RequestSearchParameter[]> params, int? offset, int? count) returns r4:ValueSet[]|r4:FHIRError {
@@ -288,10 +310,15 @@ isolated function createFHIRError(string s, string s1, string s2, any cause, int
     return [];
 }
 
+isolated function StreamToStoreCodeSystem(stream<store:CodeSystem, persist:Error?> codeSystemStream) returns store:CodeSystem[]|error {
+    store:CodeSystem[] dbCodeSystems = check from var codeSystem in codeSystemStream select codeSystem;
+    return dbCodeSystems;
+}
+
 isolated function getAllCodeSystems() returns r4:CodeSystem[]|error {
     stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems();
     store:CodeSystem[] dbCodeSystems = check from var codeSystem in codeSystemStream select codeSystem;
-    
+
     io:println("CodeSystem count: ", dbCodeSystems.count());
 
     r4:CodeSystem[] codeSystemArray = [];
@@ -315,6 +342,9 @@ isolated function getCodeSystemByID(string id, string? version = ()) returns r4:
     sql:ParameterizedQuery sqlQuery = version is ()
         ? `SELECT * FROM codesystems WHERE id = ${id} ORDER BY version DESC LIMIT 1`
         : `SELECT * FROM codesystems WHERE id = ${id} AND version = ${version}`;
+
+    io:println("SQL Query strings: ", sqlQuery.strings);
+    io:println("SQL Query insertions: ", sqlQuery.insertions);
 
     stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->queryNativeSQL(sqlQuery, store:CodeSystem);
     store:CodeSystem[] codeSystems = check from var codeSystem in codeSystemStream select codeSystem;
