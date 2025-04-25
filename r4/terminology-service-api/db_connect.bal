@@ -1,9 +1,7 @@
 import terminology_service_api.store;
 
 import ballerina/http;
-import ballerina/io;
 import ballerina/persist;
-// import ballerina/regex;
 import ballerina/sql;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.terminology;
@@ -69,7 +67,7 @@ public isolated class TerminologySource {
                 code: concept.code,
                 display: concept.display ?: "",
                 definition: concept.definition ?: "",
-                concept: concept.toString().toBytes(),
+                concept: check ConceptToByte(concept),
                 codesystemCodeSystemId: response[0]
             };
             conceptInsertList.push(dbConceptInsert);
@@ -196,12 +194,58 @@ public isolated class TerminologySource {
     }
 
     public isolated function findConcept(r4:uri system, r4:code code, string? version) returns terminology:CodeConceptDetails|r4:FHIRError {
-        return r4:createFHIRError(
-                "CodeSystem not found",
-                r4:ERROR,
-                r4:INVALID_REQUIRED,
-                cause = error("No matching CodeSystem found"),
-                httpStatusCode = http:STATUS_NOT_FOUND);
+        // TODO: Implement for valuesets
+        // check whether the code system exists
+        boolean isExist = self.isCodeSystemExist(system, version);
+
+        if !isExist {
+            return r4:createFHIRError(
+                    "CodeSystem not found",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = error("No matching CodeSystem found"),
+                    httpStatusCode = http:STATUS_NOT_FOUND);
+        }
+
+        sql:ParameterizedQuery sqlQueryWhereClause = `code = ${code} AND codesystemCodeSystemId = ${system}`;
+
+        stream<store:Concept, persist:Error?> conceptStream = sClient->/concepts(store:Concept, whereClause = sqlQueryWhereClause);
+        store:Concept[]|error dbConcept = StreamToStoreConcept(conceptStream);
+
+        if dbConcept is error {
+            return r4:createFHIRError(
+                    "Error while searching for Concept, " + dbConcept.message(),
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = dbConcept,
+                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        if dbConcept.length() == 0 {
+            // concept not found
+            return r4:createFHIRError(
+                    "Concept not found",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = error("No matching Concept found"),
+                    httpStatusCode = http:STATUS_NOT_FOUND);
+        }
+
+        r4:CodeSystemConcept|error codeSystemConcept = ByteToConcept(dbConcept[0].concept);
+        
+        if codeSystemConcept is error {
+            return r4:createFHIRError(
+                    "Error while parsing Concept, " + codeSystemConcept.message(),
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = codeSystemConcept,
+                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        return {
+            url: system,
+            concept: codeSystemConcept
+        };
     }
 
     public isolated function findValueSet(r4:uri? system, string? id, string? version) returns r4:ValueSet|r4:FHIRError {
@@ -213,7 +257,7 @@ public isolated class TerminologySource {
                 httpStatusCode = http:STATUS_NOT_FOUND);
     }
 
-    public isolated function isCodeSystemExist(r4:uri system, string version) returns boolean {
+    public isolated function isCodeSystemExist(r4:uri system, string? version) returns boolean {
         r4:CodeSystem|boolean|r4:FHIRError|persist:Error|error result = getCodeSystemByURL(system, version);
 
         if result is r4:CodeSystem {
@@ -240,39 +284,51 @@ public isolated class TerminologySource {
     }
 
     public isolated function searchCodeSystem(map<r4:RequestSearchParameter[]> params, int? offset, int? count) returns r4:CodeSystem[]|r4:FHIRError {
-        string whereClause = "";
+        sql:ParameterizedQuery[] whereFragments = [];
 
-        foreach var searchParam in params.keys() {
-            if searchParam == "description" {
-                // Skip the description parameter as it is not part of the model
-                continue;
-            }
-
-            r4:RequestSearchParameter[] searchParamValues = params[searchParam] ?: [];
-            if searchParamValues.length() != 0 {
-                string paramCondition = "(";
-                string columnName = terminology:CODESYSTEMS_SEARCH_PARAMS.get(searchParam);
-                // if searchParam == "system" {
-                //     // Convert system to url
-                //     columnName = "url";
-                // }
-                foreach var queriedValue in searchParamValues {
-                    paramCondition += columnName + " = '" + queriedValue.value + "' OR ";
+        foreach var [paramName, paramList] in params.entries() {
+            if terminology:CODESYSTEMS_SEARCH_PARAMS.hasKey(paramName) {
+                foreach var param in paramList {
+                    if whereFragments.length() > 0 {
+                        // Add explicit AND between conditions
+                        whereFragments.push(` AND `);
+                    }
+                    match terminology:CODESYSTEMS_SEARCH_PARAMS.get(paramName) {
+                        "id" => {
+                            whereFragments.push(`id=${param.value}`);
+                        }
+                        "url" => {
+                            whereFragments.push(`url=${param.value}`);
+                        }
+                        "system" => {
+                            whereFragments.push(`url=${param.value}`);
+                        }
+                        "version" => {
+                            whereFragments.push(`version=${param.value}`);
+                        }
+                        "name" => {
+                            whereFragments.push(`name=${param.value}`);
+                        }
+                        "title" => {
+                            whereFragments.push(`title=${param.value}`);
+                        }
+                        "status" => {
+                            whereFragments.push(`status=${param.value}`);
+                        }
+                        "publisher" => {
+                            whereFragments.push(`publisher=${param.value}`);
+                        }
+                    }
                 }
-                paramCondition = paramCondition.substring(0, paramCondition.length() - 4) + ")"; // Remove trailing " OR "
-                whereClause += paramCondition + " AND ";
             }
         }
 
-        whereClause = whereClause.substring(0, whereClause.length() - 5); // Remove trailing " AND "
-
-        sql:ParameterizedQuery sqlQuery = `SELECT * FROM codesystems WHERE ${whereClause} LIMIT ${count} OFFSET ${offset}`;
-
-        io:println("SQL Query strings: ", sqlQuery.strings);
-        io:println("SQL Query insertions: ", sqlQuery.insertions);
-        io:println("SQL Query: ", sqlQuery);
-
-        stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->queryNativeSQL(sqlQuery);
+        // Combine all fragments (if any) into a full where clause
+        sql:ParameterizedQuery whereClause = whereFragments.length() > 0
+            ? sql:queryConcat(...whereFragments)
+            : ``;
+        
+        stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause = whereClause);
         store:CodeSystem[]|error dbCodeSystems = StreamToStoreCodeSystem(codeSystemStream);
 
         if dbCodeSystems is error {
@@ -284,15 +340,11 @@ public isolated class TerminologySource {
                     httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
         }
 
-        io:println("CodeSystem count: ", dbCodeSystems.length());
-        io:println(dbCodeSystems);
-
         r4:CodeSystem[] codeSystemArray = [];
         foreach store:CodeSystem dbCodeSystem in dbCodeSystems {
             r4:CodeSystem|error parsedCodeSystem = ByteToCodeSystem(dbCodeSystem.codeSystem);
             if parsedCodeSystem is error {
                 // Skip this CodeSystem if parsing fails
-                io:println("Error while parsing CodeSystem: ", parsedCodeSystem.message());
                 continue;
             }
             codeSystemArray.push(parsedCodeSystem);
@@ -306,20 +358,19 @@ public isolated class TerminologySource {
     }
 }
 
-isolated function createFHIRError(string s, string s1, string s2, any cause, int httpStatusCode) returns r4:CodeSystem[]|r4:FHIRError {
-    return [];
+isolated function StreamToStoreCodeSystem(stream<store:CodeSystem, persist:Error?> codeSystemStream) returns store:CodeSystem[]|error {
+    store:CodeSystem[] dbCodeSystems = check from store:CodeSystem codeSystem in codeSystemStream select codeSystem;
+    return dbCodeSystems;
 }
 
-isolated function StreamToStoreCodeSystem(stream<store:CodeSystem, persist:Error?> codeSystemStream) returns store:CodeSystem[]|error {
-    store:CodeSystem[] dbCodeSystems = check from var codeSystem in codeSystemStream select codeSystem;
-    return dbCodeSystems;
+isolated function StreamToStoreConcept(stream<store:Concept, persist:Error?> conceptStream) returns store:Concept[]|error {
+    store:Concept[] dbConcepts = check from store:Concept concept in conceptStream select concept;
+    return dbConcepts;
 }
 
 isolated function getAllCodeSystems() returns r4:CodeSystem[]|error {
     stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems();
     store:CodeSystem[] dbCodeSystems = check from var codeSystem in codeSystemStream select codeSystem;
-
-    io:println("CodeSystem count: ", dbCodeSystems.count());
 
     r4:CodeSystem[] codeSystemArray = [];
 
@@ -333,20 +384,15 @@ isolated function getAllCodeSystems() returns r4:CodeSystem[]|error {
         codeSystemArray.push(parsedCodeSystem);
     }
 
-    io:println("CodeSystemArray count: ", codeSystemArray.length());
-
     return codeSystemArray;
 }
 
 isolated function getCodeSystemByID(string id, string? version = ()) returns r4:CodeSystem|boolean|r4:FHIRError|persist:Error|error {
-    sql:ParameterizedQuery sqlQuery = version is ()
-        ? `SELECT * FROM codesystems WHERE id = ${id} ORDER BY version DESC LIMIT 1`
-        : `SELECT * FROM codesystems WHERE id = ${id} AND version = ${version}`;
+    sql:ParameterizedQuery sqlQueryWhereClause = version is ()
+        ? `id = ${id} ORDER BY version DESC LIMIT 1`
+        : `id = ${id} AND version = ${version}`;
 
-    io:println("SQL Query strings: ", sqlQuery.strings);
-    io:println("SQL Query insertions: ", sqlQuery.insertions);
-
-    stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->queryNativeSQL(sqlQuery, store:CodeSystem);
+    stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause = sqlQueryWhereClause);
     store:CodeSystem[] codeSystems = check from var codeSystem in codeSystemStream select codeSystem;
 
     if codeSystems.length() == 0 {
@@ -357,11 +403,11 @@ isolated function getCodeSystemByID(string id, string? version = ()) returns r4:
 }
 
 isolated function getCodeSystemByURL(string system, string? version = ()) returns r4:CodeSystem|boolean|r4:FHIRError|persist:Error|error {
-    sql:ParameterizedQuery sqlQuery = version is ()
-        ? `SELECT * FROM codesystems WHERE url = ${system} ORDER BY version DESC LIMIT 1`
-        : `SELECT * FROM codesystems WHERE url = ${system} AND version = ${version}`;
+    sql:ParameterizedQuery sqlQueryWhereClause = version is ()
+        ? `url = ${system} ORDER BY version DESC LIMIT 1`
+        : `url = ${system} AND version = ${version}`;
 
-    stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->queryNativeSQL(sqlQuery, store:CodeSystem);
+    stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause = sqlQueryWhereClause);
     store:CodeSystem[] codeSystems = check from var codeSystem in codeSystemStream select codeSystem;
 
     if codeSystems.length() == 0 {
