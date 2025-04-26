@@ -196,9 +196,9 @@ public isolated class TerminologySource {
     public isolated function findConcept(r4:uri system, r4:code code, string? version) returns terminology:CodeConceptDetails|r4:FHIRError {
         // TODO: Implement for valuesets
         // check whether the code system exists
-        boolean isExist = self.isCodeSystemExist(system, version);
+        var codeSystem = getStoreCodeSystemByURL(system, version);
 
-        if !isExist {
+        if codeSystem !is store:CodeSystem {
             return r4:createFHIRError(
                     "CodeSystem not found",
                     r4:ERROR,
@@ -207,7 +207,7 @@ public isolated class TerminologySource {
                     httpStatusCode = http:STATUS_NOT_FOUND);
         }
 
-        sql:ParameterizedQuery sqlQueryWhereClause = `code = ${code} AND codesystemCodeSystemId = ${system}`;
+        sql:ParameterizedQuery sqlQueryWhereClause = `code = ${code} AND codesystemCodeSystemId = ${codeSystem.codeSystemId}`;
 
         stream<store:Concept, persist:Error?> conceptStream = sClient->/concepts(store:Concept, whereClause = sqlQueryWhereClause);
         store:Concept[]|error dbConcept = StreamToStoreConcept(conceptStream);
@@ -387,7 +387,7 @@ isolated function getAllCodeSystems() returns r4:CodeSystem[]|error {
     return codeSystemArray;
 }
 
-isolated function getCodeSystemByID(string id, string? version = ()) returns r4:CodeSystem|boolean|r4:FHIRError|persist:Error|error {
+isolated function getCodeSystemByID(string id, string? version = ()) returns r4:CodeSystem|boolean|error {
     sql:ParameterizedQuery sqlQueryWhereClause = version is ()
         ? `id = ${id} ORDER BY version DESC LIMIT 1`
         : `id = ${id} AND version = ${version}`;
@@ -402,7 +402,17 @@ isolated function getCodeSystemByID(string id, string? version = ()) returns r4:
     return ByteToCodeSystem(codeSystems[0].codeSystem);
 }
 
-isolated function getCodeSystemByURL(string system, string? version = ()) returns r4:CodeSystem|boolean|r4:FHIRError|persist:Error|error {
+isolated function getCodeSystemByURL(string system, string? version = ()) returns r4:CodeSystem|boolean|error {
+    store:CodeSystem|boolean storeCodeSystem = check getStoreCodeSystemByURL(system, version);
+
+    if storeCodeSystem is boolean {
+        return storeCodeSystem;
+    }
+
+    return ByteToCodeSystem(storeCodeSystem.codeSystem);
+}
+
+isolated function getStoreCodeSystemByURL(string system, string? version = ()) returns store:CodeSystem|boolean|error {
     sql:ParameterizedQuery sqlQueryWhereClause = version is ()
         ? `url = ${system} ORDER BY version DESC LIMIT 1`
         : `url = ${system} AND version = ${version}`;
@@ -414,5 +424,5 @@ isolated function getCodeSystemByURL(string system, string? version = ()) return
         return true;
     }
 
-    return ByteToCodeSystem(codeSystems[0].codeSystem);
+    return codeSystems[0];
 }
