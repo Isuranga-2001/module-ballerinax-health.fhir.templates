@@ -218,10 +218,10 @@ isolated function extractConceptsRecursive(r4:CodeSystemConcept var_concept, r4:
 isolated function CodeSystemToByte(r4:CodeSystem codeSystem) returns byte[]|r4:FHIRError {
     // remove concepts from the codeSystem object
     // because concepts are stored in separate table in database
-    // r4:CodeSystem codeSystemWithoutConcepts = codeSystem.clone();
-    // codeSystemWithoutConcepts.concept = ();
+    r4:CodeSystem codeSystemWithoutConcepts = codeSystem.clone();
+    codeSystemWithoutConcepts.concept = ();
 
-    byte[] byteArray = codeSystem.toJsonString().toBytes();
+    byte[] byteArray = codeSystemWithoutConcepts.toJsonString().toBytes();
 
     // check whether the conversion was successful
     r4:CodeSystem|error parsedcs = ByteToCodeSystem(byteArray);
