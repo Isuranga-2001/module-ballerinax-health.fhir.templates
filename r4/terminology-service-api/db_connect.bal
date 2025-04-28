@@ -5,6 +5,7 @@ import ballerina/persist;
 import ballerina/sql;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.terminology;
+import ballerina/io;
 
 final store:Client sClient = check new ();
 
@@ -151,7 +152,7 @@ public isolated class TerminologySource {
         return ();
     }
 
-    public isolated function findCodeSystem(r4:uri? system, string? id, string? version) returns r4:CodeSystem|r4:FHIRError {
+    public isolated function findCodeSystem(r4:uri? system, string? id, string? version = ()) returns r4:CodeSystem|r4:FHIRError {
         r4:CodeSystem|boolean|r4:FHIRError|error dbCodeSystem;
 
         if id != () {
@@ -416,6 +417,10 @@ isolated function getStoreCodeSystemByURL(string system, string? version = ()) r
     sql:ParameterizedQuery sqlQueryWhereClause = version is ()
         ? `url = ${system} ORDER BY version DESC LIMIT 1`
         : `url = ${system} AND version = ${version}`;
+
+    io:println("Version: ", version, ": ", version is ());
+
+    io:println("SQL Query: ", sqlQueryWhereClause);
 
     stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause = sqlQueryWhereClause);
     store:CodeSystem[] codeSystems = check from var codeSystem in codeSystemStream select codeSystem;

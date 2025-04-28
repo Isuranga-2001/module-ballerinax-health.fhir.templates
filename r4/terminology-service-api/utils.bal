@@ -252,7 +252,9 @@ isolated function ConceptToByte(r4:CodeSystemConcept concept) returns byte[]|r4:
 
 isolated function ByteToConcept(byte[] byteArray) returns r4:CodeSystemConcept|error {
     string conceptJsonString = check 'string:fromBytes(byteArray);
-    r4:CodeSystemConcept parsedConcept = check parser:parse(conceptJsonString).ensureType();
+    json conceptJson = check conceptJsonString.fromJsonString();
+    r4:CodeSystemConcept parsedConcept = check conceptJson.fromJsonWithType(r4:CodeSystemConcept);
 
     return parsedConcept;
 }
+

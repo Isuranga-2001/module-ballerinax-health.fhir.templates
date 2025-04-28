@@ -8,7 +8,7 @@ import ballerinax/health.fhir.r4.terminology;
 final TerminologySource db_terminology_source = new ();
 
 // Constants
-final terminology:Terminology? terminology_source = db_terminology_source;
+final terminology:Terminology? terminology_source = ();
 final boolean IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED = terminology_source is terminology:Terminology;
 
 public isolated function readCodeSystemById(string id) returns r4:FHIRError|r4:CodeSystem|r4:FHIRError {
@@ -191,6 +191,7 @@ public isolated function valueSetValidateCodeGet(http:Request request, string? i
 public isolated function codeSystemLookUpGet(http:RequestContext ctx, http:Request request, string? id = ()) returns international401:Parameters|r4:FHIRError {
     string? system = request.getQueryParamValue("system");
     string? codeValue = request.getQueryParamValue("code");
+    string? 'version = request.getQueryParamValue("version") ?: ();
 
     if codeValue !is r4:code|r4:Coding {
         return r4:createFHIRError(
@@ -204,15 +205,15 @@ public isolated function codeSystemLookUpGet(http:RequestContext ctx, http:Reque
 
     if id is string {
         if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            result = check terminology:codeSystemLookUp(<r4:code>codeValue, system = (check readCodeSystemById(id)).url, terminology = terminology_source);
+            result = check terminology:codeSystemLookUp(<r4:code>codeValue, system = (check readCodeSystemById(id)).url, version = 'version, terminology = terminology_source);
         } else {
-            result = check terminology:codeSystemLookUp(<r4:code>codeValue, system = (check readCodeSystemById(id)).url);
+            result = check terminology:codeSystemLookUp(<r4:code>codeValue, system = (check readCodeSystemById(id)).url, version = 'version);
         }
     } else if system is string {
         if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            result = check terminology:codeSystemLookUp(<r4:code>codeValue, system = system, terminology = terminology_source);
+            result = check terminology:codeSystemLookUp(<r4:code>codeValue, system = system, version = 'version, terminology = terminology_source);
         } else {
-            result = check terminology:codeSystemLookUp(<r4:code>codeValue, system = system);
+            result = check terminology:codeSystemLookUp(<r4:code>codeValue, system = system, version = 'version);
         }
     } else {
         return r4:createFHIRError(
