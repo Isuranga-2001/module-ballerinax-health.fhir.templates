@@ -194,9 +194,8 @@ isolated function designationToParameter(r4:CodeSystemConceptDesignation designa
 
 isolated function extractConcepts(r4:CodeSystem codeSystem) returns r4:CodeSystemConcept[] {
     r4:CodeSystemConcept[] concepts = [];
-    if codeSystem.concept is r4:CodeSystemConcept[] {
-        r4:CodeSystemConcept[] conceptArr = <r4:CodeSystemConcept[]>codeSystem.concept;
-        foreach var concept in conceptArr {
+    if codeSystem.concept !is () {
+        foreach var concept in <r4:CodeSystemConcept[]>codeSystem.concept {
             concepts = extractConceptsRecursive(concept, concepts);
         }
     }
@@ -206,9 +205,8 @@ isolated function extractConcepts(r4:CodeSystem codeSystem) returns r4:CodeSyste
 isolated function extractConceptsRecursive(r4:CodeSystemConcept var_concept, r4:CodeSystemConcept[] acc) returns r4:CodeSystemConcept[] {
     r4:CodeSystemConcept[] updatedAcc = acc.clone();
     updatedAcc.push(var_concept);
-    if var_concept.concept is r4:CodeSystemConcept[] {
-        r4:CodeSystemConcept[] conceptArr = <r4:CodeSystemConcept[]>var_concept.concept;
-        foreach var subConcept in conceptArr {
+    if var_concept.concept !is () {
+        foreach var subConcept in <r4:CodeSystemConcept[]>var_concept.concept {
             updatedAcc = extractConceptsRecursive(subConcept, updatedAcc);
         }
     }

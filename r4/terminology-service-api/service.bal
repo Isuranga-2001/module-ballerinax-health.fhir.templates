@@ -3,7 +3,7 @@ import ballerina/log;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 
-listener http:Listener interceptorListener = new (9089);
+listener http:Listener interceptorListener = new (9089, timeout = 0);
 
 service http:InterceptableService / on interceptorListener {
 
@@ -156,12 +156,12 @@ service http:InterceptableService / on interceptorListener {
         return codeSystem.toJson();
     }
 
-    isolated resource function post fhir/r4/CodeSystem(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
-        log:printDebug(string `FHIR Terminology request is received. Interaction: Add new CodeSystem`);
+    isolated resource function post fhir/r4/CodeSystem(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError|error {
+        log:printDebug("FHIR Terminology request is received. Interaction: Add new CodeSystem");
 
-        r4:FHIRError? response = check addCodeSystem(request);
+        r4:FHIRError? response = check addCodeSystemFromStream(request);
 
-        if (response is r4:FHIRError) {
+        if response is r4:FHIRError {
             http:Response errorResponse = new;
             errorResponse.statusCode = http:STATUS_BAD_REQUEST;
             errorResponse.setJsonPayload(response.message());

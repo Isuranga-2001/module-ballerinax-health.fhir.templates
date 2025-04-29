@@ -4,11 +4,13 @@ import ballerina/time;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
+import ballerina/io;
+import ballerina/data.jsondata;
 
 final TerminologySource db_terminology_source = new ();
 
 // Constants
-final terminology:Terminology? terminology_source = ();
+final terminology:Terminology? terminology_source = db_terminology_source;
 final boolean IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED = terminology_source is terminology:Terminology;
 
 public isolated function readCodeSystemById(string id) returns r4:FHIRError|r4:CodeSystem|r4:FHIRError {
@@ -620,4 +622,23 @@ isolated function getSystemAndCode(string input) returns map<string> {
     }
 
     return {"system": system, "code": code};
+}
+
+public isolated function addCodeSystemFromStream(http:Request codeSystemPayload) returns http:ClientError|r4:FHIRError|error? {
+    // Read the payload as a stream
+    stream<byte[], error?> payloadStream = check codeSystemPayload.getByteStream();
+    
+    time:Utc startTime = time:utcNow();
+    r4:FHIRError? result;
+
+    if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
+        result =  terminology:addCodeSystem(check jsondata:parseStream(s = payloadStream), terminology = terminology_source);
+        
+    } else {
+        result = terminology:addCodeSystem(check jsondata:parseStream(s = payloadStream));
+    }
+    
+    time:Utc endTime = time:utcNow();
+    io:println("Time taken to add the CodeSystem: ", time:utcDiffSeconds(endTime, startTime), " seconds");
+    return result;
 }

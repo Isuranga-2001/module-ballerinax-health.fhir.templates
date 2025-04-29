@@ -5,6 +5,8 @@ import ballerina/persist;
 import ballerina/sql;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.terminology;
+import ballerina/time;
+import ballerina/io;
 
 final store:Client sClient = check new ();
 
@@ -12,6 +14,8 @@ public isolated class TerminologySource {
     *terminology:Terminology;
 
     public isolated function addCodeSystem(r4:CodeSystem codeSystem) returns r4:FHIRError? {
+        time:Utc startTime = time:utcNow();
+
         if codeSystem.id !is () {
             r4:CodeSystem|boolean|r4:FHIRError|error dbCodeSystem = getCodeSystemByID(<string>codeSystem.id, codeSystem.version);
 
@@ -58,8 +62,14 @@ public isolated class TerminologySource {
                     httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
         }
 
+        time:Utc endTime = time:utcNow();
+        io:println("Time taken to add CodeSystem to DB: ", time:utcDiffSeconds(endTime, startTime).toString());
+
+        startTime = time:utcNow();
         // extract the concepts from the codesystem and add them to the database
         r4:CodeSystemConcept[] codeSystemConcepts = extractConcepts(codeSystem);
+        endTime = time:utcNow();
+        io:println("Time taken to extract concepts from CodeSystem: ", time:utcDiffSeconds(endTime, startTime).toString());
 
         store:ConceptInsert[] conceptInsertList = [];
         foreach r4:CodeSystemConcept concept in codeSystemConcepts {
