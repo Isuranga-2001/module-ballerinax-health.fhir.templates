@@ -13,28 +13,6 @@ public isolated class TerminologySource {
     *terminology:Terminology;
 
     public isolated function addCodeSystem(r4:CodeSystem codeSystem) returns r4:FHIRError? {
-        if codeSystem.id !is () {
-            r4:CodeSystem|boolean|r4:FHIRError|error dbCodeSystem = self.getCodeSystemByID(<string>codeSystem.id, codeSystem.version);
-
-            if dbCodeSystem is r4:FHIRError {
-                return dbCodeSystem;
-            } else if dbCodeSystem is error {
-                return r4:createFHIRError(
-                        "Error while checking CodeSystem existence",
-                        r4:ERROR,
-                        r4:INVALID_REQUIRED,
-                        cause = dbCodeSystem,
-                        httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
-            } else if dbCodeSystem is boolean && dbCodeSystem == false {
-                return r4:createFHIRError(
-                        "CodeSystem Already Exists",
-                        r4:ERROR,
-                        r4:INVALID_REQUIRED,
-                        cause = error("CodeSystem already exists"),
-                        httpStatusCode = http:STATUS_BAD_REQUEST);
-            }
-        }
-
         // add the code system to the database
         store:CodeSystemInsert dbCodeSystemInsert = {
             id: codeSystem.id ?: "",
@@ -52,7 +30,7 @@ public isolated class TerminologySource {
         if (response is persist:Error) {
             // error while adding code system to the database
             return r4:createFHIRError(
-                    "Error while adding CodeSystem",
+                    "Error while adding CodeSystem, " + response.message(),
                     r4:ERROR,
                     r4:INVALID_REQUIRED,
                     cause = error("Error while adding CodeSystem"),
@@ -64,32 +42,6 @@ public isolated class TerminologySource {
     }
 
     public isolated function addValueSet(r4:ValueSet valueSet) returns r4:FHIRError? {
-        // check if the value set already exists
-        stream<record {|string id;|}, persist:Error?> dbValueSets = sClient->/valuesets();
-
-        persist:Error? unionResult = from var dbValueSet in dbValueSets
-            do {
-                if (dbValueSet.id == valueSet.id) {
-                    // value set already exists
-                    return r4:createFHIRError(
-                            "ValueSet Already Exists",
-                            r4:ERROR,
-                            r4:INVALID_REQUIRED,
-                            cause = error("ValueSet already exists"),
-                            httpStatusCode = http:STATUS_BAD_REQUEST);
-                }
-            };
-
-        if (unionResult is persist:Error) {
-            // error while checking value set existence
-            return r4:createFHIRError(
-                    "Error while checking ValueSet existence",
-                    r4:ERROR,
-                    r4:INVALID_REQUIRED,
-                    cause = error("Error while checking ValueSet existence"),
-                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
-        }
-
         // add the value set to the database
         store:ValueSetInsert dbValueSetInsert = {
             id: valueSet.id ?: "",
@@ -100,24 +52,23 @@ public isolated class TerminologySource {
             status: valueSet.status,
             date: valueSet.date ?: "",
             publisher: valueSet.publisher ?: "",
-            valueSet: valueSet.toString().toBytes()
+            valueSet: check ValueSetToByte(valueSet)
         };
 
         int[]|persist:Error response = sClient->/valuesets.post([dbValueSetInsert]);
         if (response is persist:Error) {
             // error while adding value set to the database
             return r4:createFHIRError(
-                    "Error while adding ValueSet",
+                    "Error while adding ValueSet, " + response.message(),
                     r4:ERROR,
                     r4:INVALID_REQUIRED,
                     cause = error("Error while adding ValueSet"),
                     httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
         }
-        return ();
     }
 
     public isolated function findCodeSystem(r4:uri? system, string? id, string? version = ()) returns r4:CodeSystem|r4:FHIRError {
-        r4:CodeSystem|boolean|r4:FHIRError|error dbCodeSystem;
+        r4:CodeSystem|r4:FHIRError|error dbCodeSystem;
 
         if id != () {
             dbCodeSystem = self.getCodeSystemByID(id, version);
@@ -138,21 +89,12 @@ public isolated class TerminologySource {
 
         if dbCodeSystem is error {
             return r4:createFHIRError(
-                    "Cannot find CodeSystem, " + dbCodeSystem.message(),
+                    dbCodeSystem.message(),
                     r4:ERROR,
                     r4:PROCESSING_NOT_FOUND,
                     cause = dbCodeSystem,
                     httpStatusCode = http:STATUS_NOT_FOUND
                 );
-        }
-
-        if dbCodeSystem is boolean {
-            return r4:createFHIRError(
-                    "CodeSystem not found",
-                    r4:ERROR,
-                    r4:INVALID_REQUIRED,
-                    cause = error("No matching CodeSystem found"),
-                    httpStatusCode = http:STATUS_NOT_FOUND);
         }
 
         return dbCodeSystem;
@@ -175,7 +117,7 @@ public isolated class TerminologySource {
         sql:ParameterizedQuery sqlQueryWhereClause = `code = ${code} AND codesystemCodeSystemId = ${codeSystem.codeSystemId}`;
 
         stream<store:Concept, persist:Error?> conceptStream = sClient->/concepts(store:Concept, whereClause = sqlQueryWhereClause);
-        store:Concept[]|error dbConcept = self.StreamToStoreConcept(conceptStream);
+        store:Concept[]|error dbConcept = self.streamToStoreConcept(conceptStream);
 
         if dbConcept is error {
             return r4:createFHIRError(
@@ -214,37 +156,51 @@ public isolated class TerminologySource {
     }
 
     public isolated function findValueSet(r4:uri? system, string? id, string? version) returns r4:ValueSet|r4:FHIRError {
-        return r4:createFHIRError(
-                "CodeSystem not found",
-                r4:ERROR,
-                r4:INVALID_REQUIRED,
-                cause = error("No matching CodeSystem found"),
-                httpStatusCode = http:STATUS_NOT_FOUND);
+        r4:ValueSet|r4:FHIRError|error dbValueSet;
+
+        if id != () {
+            dbValueSet = self.getValueSetByID(id, version);
+        } else if system != () {
+            dbValueSet = self.getValueSetByURL(system, version);
+        } else {
+            return r4:createFHIRError(
+                    "Id or URL for the valueset is required to find ValueSet",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = error("No matching ValueSet found"),
+                    httpStatusCode = http:STATUS_BAD_REQUEST);
+        }
+
+        if dbValueSet is r4:FHIRError {
+            return dbValueSet;
+        }
+
+        if dbValueSet is error {
+            return r4:createFHIRError(
+                    "Cannot find ValueSet, " + dbValueSet.message(),
+                    r4:ERROR,
+                    r4:PROCESSING_NOT_FOUND,
+                    cause = dbValueSet,
+                    httpStatusCode = http:STATUS_NOT_FOUND
+                );
+        }
+
+        return dbValueSet;
     }
 
     public isolated function isCodeSystemExist(r4:uri system, string? version) returns boolean {
-        r4:CodeSystem|boolean|r4:FHIRError|persist:Error|error result = self.getCodeSystemByURL(system, version);
-
+        r4:CodeSystem|r4:FHIRError|persist:Error|error result = self.getCodeSystemByURL(system, version);
         if result is r4:CodeSystem {
             return true;
         }
-
         return false;
     }
 
     public isolated function isValueSetExist(r4:uri system, string version) returns boolean {
-        // stream<record {|string url; string version;|}, persist:Error?> dbValueSets = sClient->/valuesets();
-
-        // do {
-        //     check from var dbValueSet in dbValueSets do {
-        //         if (dbValueSet.url == system && dbValueSet.version == version) {
-        //             return true;
-        //         }
-        //     };
-        // } on fail {
-        //     return false;
-        // }
-
+        r4:ValueSet|r4:FHIRError|persist:Error|error result = self.getValueSetByURL(system, version);
+        if result is r4:ValueSet {
+            return true;
+        }
         return false;
     }
 
@@ -294,7 +250,7 @@ public isolated class TerminologySource {
             : ``;
         
         stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause = whereClause);
-        store:CodeSystem[]|error dbCodeSystems = self.StreamToStoreCodeSystem(codeSystemStream);
+        store:CodeSystem[]|error dbCodeSystems = self.streamToStoreCodeSystem(codeSystemStream);
 
         if dbCodeSystems is error {
             return r4:createFHIRError(
@@ -319,18 +275,89 @@ public isolated class TerminologySource {
     }
 
     public isolated function searchValueSet(map<r4:RequestSearchParameter[]> params, int? offset, int? count) returns r4:ValueSet[]|r4:FHIRError {
-        return [];
+        sql:ParameterizedQuery[] whereFragments = [];
+
+        foreach var [paramName, paramList] in params.entries() {
+            if terminology:CODESYSTEMS_SEARCH_PARAMS.hasKey(paramName) {
+                foreach var param in paramList {
+                    if whereFragments.length() > 0 {
+                        // Add explicit AND between conditions
+                        whereFragments.push(` AND `);
+                    }
+                    match terminology:CODESYSTEMS_SEARCH_PARAMS.get(paramName) {
+                        "id" => {
+                            whereFragments.push(`id=${param.value}`);
+                        }
+                        "url" => {
+                            whereFragments.push(`url=${param.value}`);
+                        }
+                        "system" => {
+                            whereFragments.push(`url=${param.value}`);
+                        }
+                        "version" => {
+                            whereFragments.push(`version=${param.value}`);
+                        }
+                        "name" => {
+                            whereFragments.push(`name=${param.value}`);
+                        }
+                        "title" => {
+                            whereFragments.push(`title=${param.value}`);
+                        }
+                        "status" => {
+                            whereFragments.push(`status=${param.value}`);
+                        }
+                        "publisher" => {
+                            whereFragments.push(`publisher=${param.value}`);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Combine all fragments (if any) into a full where clause
+        sql:ParameterizedQuery whereClause = whereFragments.length() > 0
+            ? sql:queryConcat(...whereFragments)
+            : ``;
+        
+        stream<store:ValueSet, persist:Error?> valueSetStream = sClient->/valuesets(store:ValueSet, whereClause = whereClause);
+        store:ValueSet[]|error dbValueSets = self.streamToStoreValueSet(valueSetStream);
+
+        if dbValueSets is error {
+            return r4:createFHIRError(
+                    dbValueSets.message(),
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = dbValueSets,
+                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        r4:ValueSet[] valueSetArray = [];
+        foreach store:ValueSet dbValueSet in dbValueSets {
+            r4:ValueSet|error parsedValueSet = ByteToValueSet(dbValueSet.valueSet);
+            if parsedValueSet is error {
+                // Skip this ValueSet if parsing fails
+                continue;
+            }
+            valueSetArray.push(parsedValueSet);
+        }
+
+        return valueSetArray;
     }
 
     // private functions
-    private isolated function StreamToStoreCodeSystem(stream<store:CodeSystem, persist:Error?> codeSystemStream) returns store:CodeSystem[]|error {
+    private isolated function streamToStoreCodeSystem(stream<store:CodeSystem, persist:Error?> codeSystemStream) returns store:CodeSystem[]|error {
         store:CodeSystem[] dbCodeSystems = check from store:CodeSystem codeSystem in codeSystemStream select codeSystem;
         return dbCodeSystems;
     }
 
-    private isolated function StreamToStoreConcept(stream<store:Concept, persist:Error?> conceptStream) returns store:Concept[]|error {
+    private isolated function streamToStoreConcept(stream<store:Concept, persist:Error?> conceptStream) returns store:Concept[]|error {
         store:Concept[] dbConcepts = check from store:Concept concept in conceptStream select concept;
         return dbConcepts;
+    }
+
+    private isolated function streamToStoreValueSet(stream<store:ValueSet, persist:Error?> valueSetStream) returns store:ValueSet[]|error {
+        store:ValueSet[] dbValueSets = check from store:ValueSet valueSet in valueSetStream select valueSet;
+        return dbValueSets;
     }
 
     private isolated function getAllCodeSystems() returns r4:CodeSystem[]|error {
@@ -352,7 +379,7 @@ public isolated class TerminologySource {
         return codeSystemArray;
     }
 
-    private isolated function getCodeSystemByID(string id, string? version = ()) returns r4:CodeSystem|boolean|error {
+    private isolated function getCodeSystemByID(string id, string? version = ()) returns r4:CodeSystem|error {
         sql:ParameterizedQuery sqlQueryWhereClause = version is ()
             ? `id = ${id} ORDER BY version DESC LIMIT 1`
             : `id = ${id} AND version = ${version}`;
@@ -361,23 +388,24 @@ public isolated class TerminologySource {
         store:CodeSystem[] codeSystems = check from var codeSystem in codeSystemStream select codeSystem;
 
         if codeSystems.length() == 0 {
-            return true;
+            return r4:createFHIRError(
+                    "CodeSystem not found",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = error("No matching CodeSystem found"),
+                    httpStatusCode = http:STATUS_NOT_FOUND);
         }
 
         return ByteToCodeSystem(codeSystems[0].codeSystem);
     }
 
-    private isolated function getCodeSystemByURL(string system, string? version = ()) returns r4:CodeSystem|boolean|error {
-        store:CodeSystem|boolean storeCodeSystem = check self.getStoreCodeSystemByURL(system, version);
-
-        if storeCodeSystem is boolean {
-            return storeCodeSystem;
-        }
+    private isolated function getCodeSystemByURL(string system, string? version = ()) returns r4:CodeSystem|error {
+        store:CodeSystem storeCodeSystem = check self.getStoreCodeSystemByURL(system, version);
 
         return ByteToCodeSystem(storeCodeSystem.codeSystem);
     }
 
-    private isolated function getStoreCodeSystemByURL(string system, string? version = ()) returns store:CodeSystem|boolean|error {
+    private isolated function getStoreCodeSystemByURL(string system, string? version = ()) returns store:CodeSystem|error {
         sql:ParameterizedQuery sqlQueryWhereClause = version is ()
             ? `url = ${system} ORDER BY version DESC LIMIT 1`
             : `url = ${system} AND version = ${version}`;
@@ -386,12 +414,62 @@ public isolated class TerminologySource {
         store:CodeSystem[] codeSystems = check from var codeSystem in codeSystemStream select codeSystem;
 
         if codeSystems.length() == 0 {
-            return true;
+            return r4:createFHIRError(
+                    "CodeSystem not found",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = error("No matching CodeSystem found"),
+                    httpStatusCode = http:STATUS_NOT_FOUND);
         }
 
         return codeSystems[0];
     }
 
+    private isolated function getValueSetByID(string id, string? version = ()) returns r4:ValueSet|error {
+        sql:ParameterizedQuery sqlQueryWhereClause = version is ()
+            ? `id = ${id} ORDER BY version DESC LIMIT 1`
+            : `id = ${id} AND version = ${version}`;
+
+        stream<store:ValueSet, persist:Error?> valueSetStream = sClient->/valuesets(store:ValueSet, whereClause = sqlQueryWhereClause);
+        store:ValueSet[] valueSets = check from var valueSet in valueSetStream select valueSet;
+
+        if valueSets.length() == 0 {
+            return r4:createFHIRError(
+                    "ValueSet not found",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = error("No matching ValueSet found"),
+                    httpStatusCode = http:STATUS_NOT_FOUND);
+        }
+
+        // Assuming ByteToValueSet is available similar to ByteToCodeSystem
+        return ByteToValueSet(valueSets[0].valueSet);
+    }
+
+    private isolated function getValueSetByURL(string system, string? version = ()) returns r4:ValueSet|error {
+        store:ValueSet storeValueSet = check self.getStoreValueSetByURL(system, version);
+
+        return ByteToValueSet(storeValueSet.valueSet);
+    }
+
+    private isolated function getStoreValueSetByURL(string system, string? version = ()) returns store:ValueSet|error {
+        sql:ParameterizedQuery sqlQueryWhereClause = version is ()
+            ? `url = ${system} ORDER BY version DESC LIMIT 1`
+            : `url = ${system} AND version = ${version}`;
+
+        stream<store:ValueSet, persist:Error?> valueSetStream = sClient->/valuesets(store:ValueSet, whereClause = sqlQueryWhereClause);
+        store:ValueSet[] valueSets = check from var valueSet in valueSetStream select valueSet;
+
+        if valueSets.length() == 0 {
+            return r4:createFHIRError(
+                    "ValueSet not found",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = error("No matching ValueSet found"),
+                    httpStatusCode = http:STATUS_NOT_FOUND);
+        }
+        return valueSets[0];
+    }
 
     private isolated function extractConceptsFromCodeSystem(r4:CodeSystem codeSystem, int codeSystemId) {
         if codeSystem.concept !is () {
@@ -402,7 +480,7 @@ public isolated class TerminologySource {
     }
 
     private isolated function extractConceptsFromCodeSystemRecursive(r4:CodeSystemConcept var_concept, int codeSystemId) {
-        error? result = self.saveConcept(var_concept, codeSystemId); 
+        error? result = self.saveCodeSystemConcept(var_concept, codeSystemId); 
         if result is error {
             log:printError("Error while saving concept: " + result.message());
         }
@@ -414,11 +492,9 @@ public isolated class TerminologySource {
         }
     }
 
-    private isolated function saveConcept(r4:CodeSystemConcept concept, int codeSystemId) returns error? {
+    private isolated function saveCodeSystemConcept(r4:CodeSystemConcept concept, int codeSystemId) returns error? {
         store:ConceptInsert dbConceptInsert = {
             code: concept.code,
-            display: concept.display ?: "",
-            definition: concept.definition ?: "",
             concept: check ConceptToByte(concept),
             codesystemCodeSystemId: codeSystemId
         };

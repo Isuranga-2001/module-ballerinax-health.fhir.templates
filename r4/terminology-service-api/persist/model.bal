@@ -22,8 +22,6 @@ public type Concept record {|
     @sql:Generated
     readonly int conceptId;
     string code;
-    string display;
-    string definition;
     byte[] concept;
     CodeSystem codeSystem;
 |};
@@ -41,4 +39,16 @@ public type ValueSet record {|
     string date;
     string publisher;
     byte[] valueSet;
+    ValueSetConcept[] concepts;
+|};
+
+@sql:Name {value: "valueset_concepts"}
+public type ValueSetConcept record {|
+    @sql:Generated
+    readonly int valueSetConceptId;
+    string? system;
+    string? version;
+    string? code;
+    byte[] concept;
+    ValueSet valueSet;
 |};

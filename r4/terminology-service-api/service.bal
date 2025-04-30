@@ -84,7 +84,7 @@ service http:InterceptableService / on interceptorListener {
     isolated resource function post fhir/r4/ValueSet(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug(string `FHIR Terminology request is received. Interaction: Add new ValueSet`);
 
-        r4:FHIRError? response = check addValueSet(request);
+        r4:FHIRError? response = check addValueSetFromStream(request);
 
         if (response is r4:FHIRError) {
             http:Response errorResponse = new;

@@ -223,8 +223,7 @@ isolated function ByteToCodeSystem(byte[] byteArray) returns r4:CodeSystem|error
 }
 
 isolated function ConceptToByte(r4:CodeSystemConcept concept) returns byte[]|r4:FHIRError {
-    byte[] byteArray = concept.toJsonString().toBytes();
-    return byteArray;
+    return concept.toJsonString().toBytes();
 }
 
 isolated function ByteToConcept(byte[] byteArray) returns r4:CodeSystemConcept|error {
@@ -235,3 +234,13 @@ isolated function ByteToConcept(byte[] byteArray) returns r4:CodeSystemConcept|e
     return parsedConcept;
 }
 
+isolated function ValueSetToByte(r4:ValueSet valueSet) returns byte[]|r4:FHIRError {
+    return valueSet.toJsonString().toBytes();
+}
+
+isolated function ByteToValueSet(byte[] byteArray) returns r4:ValueSet|error {
+    string valueSetJsonString = check 'string:fromBytes(byteArray);
+    r4:ValueSet parsedValueSet = check parser:parse(valueSetJsonString).ensureType();
+
+    return parsedValueSet;
+}

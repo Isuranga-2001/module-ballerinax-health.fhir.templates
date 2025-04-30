@@ -9,7 +9,7 @@ import ballerina/data.jsondata;
 final TerminologySource db_terminology_source = new ();
 
 // Constants
-final terminology:Terminology? terminology_source = ();
+final terminology:Terminology? terminology_source = db_terminology_source;
 final boolean IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED = terminology_source is terminology:Terminology;
 
 public isolated function readCodeSystemById(string id) returns r4:FHIRError|r4:CodeSystem|r4:FHIRError {
@@ -536,34 +536,6 @@ public isolated function batchValidateValueSets(http:Request request) returns r4
     };
 }
 
-public isolated function addValueSet(http:Request valueSetPayload) returns r4:FHIRError? {
-    // check whether the payload is a valid FHIR ValueSet
-    json|error jsonPayload = valueSetPayload.getJsonPayload();
-    if jsonPayload is json {
-        r4:ValueSet|error valueSet = jsonPayload.cloneWithType(r4:ValueSet);
-        if valueSet is error {
-            return r4:createFHIRError(
-                    "Invalid request payload",
-                    r4:ERROR,
-                    r4:INVALID_REQUIRED,
-                    cause = valueSet,
-                    httpStatusCode = http:STATUS_BAD_REQUEST);
-        }
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            return terminology:addValueSet(valueSet, terminology = terminology_source);
-        } else {
-            return terminology:addValueSet(valueSet);
-        }
-    } else {
-        return r4:createFHIRError(
-                "Invalid or empty request payload",
-                r4:ERROR,
-                r4:INVALID_REQUIRED,
-                cause = jsonPayload,
-                httpStatusCode = http:STATUS_BAD_REQUEST);
-    }
-}
-
 isolated function getSystemAndCode(string input) returns map<string> {
     // Split the string at '?' to separate the base URL and query parameters
     string[] parts = regex:split(input, string `\?`);
@@ -595,8 +567,7 @@ isolated function getSystemAndCode(string input) returns map<string> {
     return {"system": system, "code": code};
 }
 
-public isolated function addCodeSystemFromStream(http:Request codeSystemPayload) returns http:ClientError|r4:FHIRError|error? {
-    // Read the payload as a stream
+public isolated function addCodeSystemFromStream(http:Request codeSystemPayload) returns r4:FHIRError? {
     do {
         stream<byte[], error?> payloadStream = check codeSystemPayload.getByteStream();
         r4:CodeSystem codeSystem = check jsondata:parseStream(s = payloadStream);
@@ -608,7 +579,27 @@ public isolated function addCodeSystemFromStream(http:Request codeSystemPayload)
         }
     } on fail var e {
         return r4:createFHIRError(
-                "Invalid request payload",
+                "Invalid or empty request payload",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                cause = e,
+                httpStatusCode = http:STATUS_BAD_REQUEST);
+    }
+}
+
+public isolated function addValueSetFromStream(http:Request valueSetPayload) returns r4:FHIRError? {
+    do {
+        stream<byte[], error?> payloadStream = check valueSetPayload.getByteStream();
+        r4:ValueSet valueSet = check jsondata:parseStream(s = payloadStream);
+
+        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
+            return terminology:addValueSet(valueSet, terminology = terminology_source);
+        } else {
+            return terminology:addValueSet(valueSet);
+        }
+    } on fail var e {
+        return r4:createFHIRError(
+                "Invalid or empty request payload",
                 r4:ERROR,
                 r4:INVALID_REQUIRED,
                 cause = e,
