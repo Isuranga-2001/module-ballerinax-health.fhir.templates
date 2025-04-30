@@ -4,13 +4,12 @@ import ballerina/time;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
-import ballerina/io;
 import ballerina/data.jsondata;
 
 final TerminologySource db_terminology_source = new ();
 
 // Constants
-final terminology:Terminology? terminology_source = db_terminology_source;
+final terminology:Terminology? terminology_source = ();
 final boolean IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED = terminology_source is terminology:Terminology;
 
 public isolated function readCodeSystemById(string id) returns r4:FHIRError|r4:CodeSystem|r4:FHIRError {
@@ -565,34 +564,6 @@ public isolated function addValueSet(http:Request valueSetPayload) returns r4:FH
     }
 }
 
-public isolated function addCodeSystem(http:Request codeSystemPayload) returns r4:FHIRError? {
-    // Check whether the payload is a valid FHIR CodeSystem
-    json|error jsonPayload = codeSystemPayload.getJsonPayload();
-    if jsonPayload is json {
-        r4:CodeSystem|error codeSystem = jsonPayload.cloneWithType(r4:CodeSystem);
-        if codeSystem is error {
-            return r4:createFHIRError(
-                    "Invalid request payload",
-                    r4:ERROR,
-                    r4:INVALID_REQUIRED,
-                    cause = codeSystem,
-                    httpStatusCode = http:STATUS_BAD_REQUEST);
-        }
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            return terminology:addCodeSystem(codeSystem, terminology = terminology_source);
-        } else {
-            return terminology:addCodeSystem(codeSystem);
-        }
-    } else {
-        return r4:createFHIRError(
-                "Invalid or empty request payload",
-                r4:ERROR,
-                r4:INVALID_REQUIRED,
-                cause = jsonPayload,
-                httpStatusCode = http:STATUS_BAD_REQUEST);
-    }
-}
-
 isolated function getSystemAndCode(string input) returns map<string> {
     // Split the string at '?' to separate the base URL and query parameters
     string[] parts = regex:split(input, string `\?`);
@@ -626,19 +597,21 @@ isolated function getSystemAndCode(string input) returns map<string> {
 
 public isolated function addCodeSystemFromStream(http:Request codeSystemPayload) returns http:ClientError|r4:FHIRError|error? {
     // Read the payload as a stream
-    stream<byte[], error?> payloadStream = check codeSystemPayload.getByteStream();
-    
-    time:Utc startTime = time:utcNow();
-    r4:FHIRError? result;
+    do {
+        stream<byte[], error?> payloadStream = check codeSystemPayload.getByteStream();
+        r4:CodeSystem codeSystem = check jsondata:parseStream(s = payloadStream);
 
-    if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-        result =  terminology:addCodeSystem(check jsondata:parseStream(s = payloadStream), terminology = terminology_source);
-        
-    } else {
-        result = terminology:addCodeSystem(check jsondata:parseStream(s = payloadStream));
+        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
+            return terminology:addCodeSystem(codeSystem, terminology = terminology_source);
+        } else {
+            return terminology:addCodeSystem(codeSystem);
+        }
+    } on fail var e {
+        return r4:createFHIRError(
+                "Invalid request payload",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                cause = e,
+                httpStatusCode = http:STATUS_BAD_REQUEST);
     }
-    
-    time:Utc endTime = time:utcNow();
-    io:println("Time taken to add the CodeSystem: ", time:utcDiffSeconds(endTime, startTime), " seconds");
-    return result;
 }

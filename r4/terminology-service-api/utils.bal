@@ -192,27 +192,6 @@ isolated function designationToParameter(r4:CodeSystemConceptDesignation designa
     return param;
 }
 
-isolated function extractConcepts(r4:CodeSystem codeSystem) returns r4:CodeSystemConcept[] {
-    r4:CodeSystemConcept[] concepts = [];
-    if codeSystem.concept !is () {
-        foreach var concept in <r4:CodeSystemConcept[]>codeSystem.concept {
-            concepts = extractConceptsRecursive(concept, concepts);
-        }
-    }
-    return concepts;
-}
-
-isolated function extractConceptsRecursive(r4:CodeSystemConcept var_concept, r4:CodeSystemConcept[] acc) returns r4:CodeSystemConcept[] {
-    r4:CodeSystemConcept[] updatedAcc = acc.clone();
-    updatedAcc.push(var_concept);
-    if var_concept.concept !is () {
-        foreach var subConcept in <r4:CodeSystemConcept[]>var_concept.concept {
-            updatedAcc = extractConceptsRecursive(subConcept, updatedAcc);
-        }
-    }
-    return updatedAcc;
-}
-
 isolated function CodeSystemToByte(r4:CodeSystem codeSystem) returns byte[]|r4:FHIRError {
     // remove concepts from the codeSystem object
     // because concepts are stored in separate table in database
