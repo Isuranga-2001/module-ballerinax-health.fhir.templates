@@ -495,8 +495,6 @@ public isolated class TerminologySource {
     private isolated function saveCodeSystemConcept(r4:CodeSystemConcept concept, int codeSystemId) returns error? {
         store:ConceptInsert dbConceptInsert = {
             code: concept.code,
-            display: concept.display ?: "",
-            definition: concept.definition ?: "",
             concept: check ConceptToByte(concept),
             codesystemCodeSystemId: codeSystemId
         };
