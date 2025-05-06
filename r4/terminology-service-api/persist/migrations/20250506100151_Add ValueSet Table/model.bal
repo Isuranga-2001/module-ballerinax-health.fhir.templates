@@ -49,9 +49,7 @@ public type ValueSetConcept record {|
     readonly int valueSetConceptId;
     string? system;
     string? version;
-    string? id;
     string? code;
-    boolean systemFlag;
     byte[] concept;
     ValueSet valueSet;
 |};

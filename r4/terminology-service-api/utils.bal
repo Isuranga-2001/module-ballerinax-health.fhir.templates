@@ -222,7 +222,7 @@ isolated function ByteToCodeSystem(byte[] byteArray) returns r4:CodeSystem|error
     return parsedCodeSystem;
 }
 
-isolated function ConceptToByte(r4:CodeSystemConcept concept) returns byte[]|r4:FHIRError {
+isolated function ConceptToByte(r4:CodeSystemConcept|r4:ValueSetComposeInclude|r4:ValueSetComposeIncludeConcept concept) returns byte[]|r4:FHIRError {
     return concept.toJsonString().toBytes();
 }
 

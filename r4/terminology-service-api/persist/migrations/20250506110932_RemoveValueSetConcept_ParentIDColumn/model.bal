@@ -51,7 +51,6 @@ public type ValueSetConcept record {|
     string? version;
     string? id;
     string? code;
-    boolean systemFlag;
     byte[] concept;
     ValueSet valueSet;
 |};
