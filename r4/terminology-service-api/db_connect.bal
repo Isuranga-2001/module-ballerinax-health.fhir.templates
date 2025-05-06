@@ -1,11 +1,11 @@
 import terminology_service_api.store;
 
 import ballerina/http;
+import ballerina/log;
 import ballerina/persist;
 import ballerina/sql;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.terminology;
-import ballerina/log;
 
 final store:Client sClient = check new ();
 
@@ -36,7 +36,7 @@ public isolated class TerminologySource {
                     cause = error("Error while adding CodeSystem"),
                     httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
         }
-        
+
         // extract the concepts from the codesystem and add them to the database
         self.extractConceptsFromCodeSystem(codeSystem, response[0]);
     }
@@ -65,6 +65,9 @@ public isolated class TerminologySource {
                     cause = error("Error while adding ValueSet"),
                     httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
         }
+
+        // extract the concepts from the valueset and add them to the database
+        self.extractConceptsFromValueSet(valueSet, response[0]);
     }
 
     public isolated function findCodeSystem(r4:uri? system, string? id, string? version = ()) returns r4:CodeSystem|r4:FHIRError {
@@ -139,7 +142,7 @@ public isolated class TerminologySource {
         }
 
         r4:CodeSystemConcept|error codeSystemConcept = ByteToConcept(dbConcept[0].concept);
-        
+
         if codeSystemConcept is error {
             return r4:createFHIRError(
                     "Error while parsing Concept, " + codeSystemConcept.message(),
@@ -248,7 +251,7 @@ public isolated class TerminologySource {
         sql:ParameterizedQuery whereClause = whereFragments.length() > 0
             ? sql:queryConcat(...whereFragments)
             : ``;
-        
+
         stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause = whereClause);
         store:CodeSystem[]|error dbCodeSystems = self.streamToStoreCodeSystem(codeSystemStream);
 
@@ -318,7 +321,7 @@ public isolated class TerminologySource {
         sql:ParameterizedQuery whereClause = whereFragments.length() > 0
             ? sql:queryConcat(...whereFragments)
             : ``;
-        
+
         stream<store:ValueSet, persist:Error?> valueSetStream = sClient->/valuesets(store:ValueSet, whereClause = whereClause);
         store:ValueSet[]|error dbValueSets = self.streamToStoreValueSet(valueSetStream);
 
@@ -346,23 +349,27 @@ public isolated class TerminologySource {
 
     // private functions
     private isolated function streamToStoreCodeSystem(stream<store:CodeSystem, persist:Error?> codeSystemStream) returns store:CodeSystem[]|error {
-        store:CodeSystem[] dbCodeSystems = check from store:CodeSystem codeSystem in codeSystemStream select codeSystem;
+        store:CodeSystem[] dbCodeSystems = check from store:CodeSystem codeSystem in codeSystemStream
+            select codeSystem;
         return dbCodeSystems;
     }
 
     private isolated function streamToStoreConcept(stream<store:Concept, persist:Error?> conceptStream) returns store:Concept[]|error {
-        store:Concept[] dbConcepts = check from store:Concept concept in conceptStream select concept;
+        store:Concept[] dbConcepts = check from store:Concept concept in conceptStream
+            select concept;
         return dbConcepts;
     }
 
     private isolated function streamToStoreValueSet(stream<store:ValueSet, persist:Error?> valueSetStream) returns store:ValueSet[]|error {
-        store:ValueSet[] dbValueSets = check from store:ValueSet valueSet in valueSetStream select valueSet;
+        store:ValueSet[] dbValueSets = check from store:ValueSet valueSet in valueSetStream
+            select valueSet;
         return dbValueSets;
     }
 
     private isolated function getAllCodeSystems() returns r4:CodeSystem[]|error {
         stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems();
-        store:CodeSystem[] dbCodeSystems = check from var codeSystem in codeSystemStream select codeSystem;
+        store:CodeSystem[] dbCodeSystems = check from var codeSystem in codeSystemStream
+            select codeSystem;
 
         r4:CodeSystem[] codeSystemArray = [];
 
@@ -385,7 +392,8 @@ public isolated class TerminologySource {
             : `id = ${id} AND version = ${version}`;
 
         stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause = sqlQueryWhereClause);
-        store:CodeSystem[] codeSystems = check from var codeSystem in codeSystemStream select codeSystem;
+        store:CodeSystem[] codeSystems = check from var codeSystem in codeSystemStream
+            select codeSystem;
 
         if codeSystems.length() == 0 {
             return r4:createFHIRError(
@@ -411,7 +419,8 @@ public isolated class TerminologySource {
             : `url = ${system} AND version = ${version}`;
 
         stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause = sqlQueryWhereClause);
-        store:CodeSystem[] codeSystems = check from var codeSystem in codeSystemStream select codeSystem;
+        store:CodeSystem[] codeSystems = check from var codeSystem in codeSystemStream
+            select codeSystem;
 
         if codeSystems.length() == 0 {
             return r4:createFHIRError(
@@ -431,7 +440,8 @@ public isolated class TerminologySource {
             : `id = ${id} AND version = ${version}`;
 
         stream<store:ValueSet, persist:Error?> valueSetStream = sClient->/valuesets(store:ValueSet, whereClause = sqlQueryWhereClause);
-        store:ValueSet[] valueSets = check from var valueSet in valueSetStream select valueSet;
+        store:ValueSet[] valueSets = check from var valueSet in valueSetStream
+            select valueSet;
 
         if valueSets.length() == 0 {
             return r4:createFHIRError(
@@ -458,7 +468,8 @@ public isolated class TerminologySource {
             : `url = ${system} AND version = ${version}`;
 
         stream<store:ValueSet, persist:Error?> valueSetStream = sClient->/valuesets(store:ValueSet, whereClause = sqlQueryWhereClause);
-        store:ValueSet[] valueSets = check from var valueSet in valueSetStream select valueSet;
+        store:ValueSet[] valueSets = check from var valueSet in valueSetStream
+            select valueSet;
 
         if valueSets.length() == 0 {
             return r4:createFHIRError(
@@ -479,26 +490,78 @@ public isolated class TerminologySource {
         }
     }
 
-    private isolated function extractConceptsFromCodeSystemRecursive(r4:CodeSystemConcept var_concept, int codeSystemId) {
-        error? result = self.saveCodeSystemConcept(var_concept, codeSystemId); 
+    private isolated function extractConceptsFromCodeSystemRecursive(r4:CodeSystemConcept var_concept, int codeSystemId, int? parentId = ()) {
+        int|error result = self.saveCodeSystemConcept(var_concept, codeSystemId, parentId);
         if result is error {
             log:printError("Error while saving concept: " + result.message());
         }
 
         if var_concept.concept !is () {
             foreach var subConcept in <r4:CodeSystemConcept[]>var_concept.concept {
-                _ = start self.extractConceptsFromCodeSystemRecursive(subConcept.clone(), codeSystemId);
+                _ = start self.extractConceptsFromCodeSystemRecursive(subConcept.clone(), codeSystemId, (result is int) ? result : ());
             }
         }
     }
 
-    private isolated function saveCodeSystemConcept(r4:CodeSystemConcept concept, int codeSystemId) returns error? {
+    private isolated function saveCodeSystemConcept(r4:CodeSystemConcept concept, int codeSystemId, int? parentId) returns int|error {
         store:ConceptInsert dbConceptInsert = {
             code: concept.code,
             concept: check ConceptToByte(concept),
-            codesystemCodeSystemId: codeSystemId
+            codesystemCodeSystemId: codeSystemId,
+            parentConceptId: parentId
         };
 
-        _ = check sClient->/concepts.post([dbConceptInsert]);
+        int[] id = check sClient->/concepts.post([dbConceptInsert]);
+        return id[0];
+    }
+
+    // Extract concepts from a ValueSet and save them recursively
+    private isolated function extractConceptsFromValueSet(r4:ValueSet valueSet, int valueSetId) {
+        if valueSet.compose is r4:ValueSetCompose {
+            foreach r4:ValueSetComposeInclude include in (<r4:ValueSetCompose>valueSet.compose).include {
+                error? result = self.saveValueSetInclude(include, valueSetId);
+                if result is error {
+                    log:printError("Error while saving ValueSet concept: " + result.message());
+                }
+            }
+        } else {
+            return;
+        }
+    }
+
+    // Save a ValueSet concept to the database
+    private isolated function saveValueSetInclude(r4:ValueSetComposeInclude include, int valueSetId) returns error? {
+        boolean isConceptIncluded = include.concept is r4:ValueSetComposeIncludeConcept[];
+
+        if isConceptIncluded {
+            foreach r4:ValueSetComposeIncludeConcept item in <r4:ValueSetComposeIncludeConcept[]>include.concept {
+                _ = start self.saveValueSetConcept(item.clone(), valueSetId);
+            }
+        } else {
+            store:ValueSetConceptInsert dbValueSetConceptInsert = {
+                code: (),
+                system: include.system,
+                'version: include.'version,
+                id: include.id,
+                systemFlag: true,
+                concept: check ConceptToByte(include),
+                valuesetValueSetId: valueSetId
+            };
+            _ = check sClient->/valuesetconcepts.post([dbValueSetConceptInsert]);
+        }
+    }
+
+    private isolated function saveValueSetConcept(r4:ValueSetComposeIncludeConcept concept, int valueSetId) returns error? {
+        store:ValueSetConceptInsert dbValueSetConceptInsert = {
+            code: concept.code,
+            system: (),
+            'version: (),
+            id: concept.id,
+            systemFlag: false,
+            concept: check ConceptToByte(concept),
+            valuesetValueSetId: valueSetId
+        };
+
+        _ = check sClient->/valuesetconcepts.post([dbValueSetConceptInsert]);
     }
 }
