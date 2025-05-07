@@ -222,7 +222,7 @@ isolated function ByteToCodeSystem(byte[] byteArray) returns r4:CodeSystem|error
     return parsedCodeSystem;
 }
 
-isolated function ConceptToByte(r4:CodeSystemConcept|r4:ValueSetComposeInclude|r4:ValueSetComposeIncludeConcept concept) returns byte[]|r4:FHIRError {
+isolated function ConceptToByte(r4:CodeSystemConcept|r4:ValueSetComposeIncludeConcept concept) returns byte[]|r4:FHIRError {
     return concept.toJsonString().toBytes();
 }
 
@@ -243,4 +243,12 @@ isolated function ByteToValueSet(byte[] byteArray) returns r4:ValueSet|error {
     r4:ValueSet parsedValueSet = check parser:parse(valueSetJsonString).ensureType();
 
     return parsedValueSet;
+}
+
+isolated function ByteToValueSetConcept(byte[] byteArray) returns r4:ValueSetComposeIncludeConcept|error {
+    string conceptJsonString = check 'string:fromBytes(byteArray);
+    json conceptJson = check conceptJsonString.fromJsonString();
+    r4:ValueSetComposeIncludeConcept parsedConcept = check conceptJson.fromJsonWithType(r4:ValueSetComposeIncludeConcept);
+
+    return parsedConcept;
 }

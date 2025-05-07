@@ -4,6 +4,7 @@ import ballerina/http;
 import ballerina/log;
 import ballerina/persist;
 import ballerina/sql;
+import ballerina/regex;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.terminology;
 
@@ -104,58 +105,24 @@ public isolated class TerminologySource {
     }
 
     public isolated function findConcept(r4:uri system, r4:code code, string? version) returns terminology:CodeConceptDetails|r4:FHIRError {
-        // TODO: Implement for valuesets
-        // check whether the code system exists
-        var codeSystem = self.getStoreCodeSystemByURL(system, version);
-
-        if codeSystem !is store:CodeSystem {
-            return r4:createFHIRError(
-                    "CodeSystem not found",
-                    r4:ERROR,
-                    r4:INVALID_REQUIRED,
-                    cause = error("No matching CodeSystem found"),
-                    httpStatusCode = http:STATUS_NOT_FOUND);
+        // find the concept in the valueset table
+        terminology:CodeConceptDetails|r4:FHIRError valuesetConceptDetails = self.findConceptInValueSet(system, code, version);
+        if valuesetConceptDetails !is r4:FHIRError {
+            return valuesetConceptDetails;
         }
-
-        sql:ParameterizedQuery sqlQueryWhereClause = `code = ${code} AND codesystemCodeSystemId = ${codeSystem.codeSystemId}`;
-
-        stream<store:Concept, persist:Error?> conceptStream = sClient->/concepts(store:Concept, whereClause = sqlQueryWhereClause);
-        store:Concept[]|error dbConcept = self.streamToStoreConcept(conceptStream);
-
-        if dbConcept is error {
+        
+        // find the concept in the codesystem table
+        terminology:CodeConceptDetails|r4:FHIRError conceptDetails = self.findConceptInCodeSystem(system, code, version);
+        if conceptDetails is r4:FHIRError {
             return r4:createFHIRError(
-                    "Error while searching for Concept, " + dbConcept.message(),
+                    conceptDetails.message(),
                     r4:ERROR,
                     r4:INVALID_REQUIRED,
-                    cause = dbConcept,
+                    cause = conceptDetails,
                     httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
         }
 
-        if dbConcept.length() == 0 {
-            // concept not found
-            return r4:createFHIRError(
-                    "Concept not found",
-                    r4:ERROR,
-                    r4:INVALID_REQUIRED,
-                    cause = error("No matching Concept found"),
-                    httpStatusCode = http:STATUS_NOT_FOUND);
-        }
-
-        r4:CodeSystemConcept|error codeSystemConcept = ByteToConcept(dbConcept[0].concept);
-
-        if codeSystemConcept is error {
-            return r4:createFHIRError(
-                    "Error while parsing Concept, " + codeSystemConcept.message(),
-                    r4:ERROR,
-                    r4:INVALID_REQUIRED,
-                    cause = codeSystemConcept,
-                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
-        }
-
-        return {
-            url: system,
-            concept: codeSystemConcept
-        };
+        return conceptDetails;
     }
 
     public isolated function findValueSet(r4:uri? system, string? id, string? version) returns r4:ValueSet|r4:FHIRError {
@@ -347,6 +314,145 @@ public isolated class TerminologySource {
         return valueSetArray;
     }
 
+    private isolated function findConceptInValueSet(r4:uri system, r4:code code, string? version) returns terminology:CodeConceptDetails|r4:FHIRError {
+        // check whether the value set exists
+        var valueset = self.getStoreValueSetByURL(system, version);
+
+        if valueset !is store:ValueSet {
+            return r4:createFHIRError(
+                    "CodeSystem not found",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = error("No matching CodeSystem found"),
+                    httpStatusCode = http:STATUS_NOT_FOUND);
+        }
+
+        sql:ParameterizedQuery sqlQueryWhereClause = `valuesetValueSetId = ${valueset.valueSetId} AND (code = ${code} OR systemFlag = TRUE)`;
+
+        stream<store:ValueSetConcept, persist:Error?> conceptStream = sClient->/valuesetconcepts(store:ValueSetConcept, sqlQueryWhereClause);
+        store:ValueSetConcept[]|error dbConcepts = self.streamToStoreValueSetConcept(conceptStream);
+
+        if dbConcepts is error {
+            return r4:createFHIRError(
+                    "Error while searching for Concept, " + dbConcepts.message(),
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = dbConcepts,
+                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        if dbConcepts.length() == 0 {
+            // concept not found
+            return r4:createFHIRError(
+                    "Concept not found",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = error("No matching Concept found"),
+                    httpStatusCode = http:STATUS_NOT_FOUND);
+        }
+
+        store:ValueSetConcept[] valueSetSystems = [];
+
+        // check whether the code in the concepts
+        foreach store:ValueSetConcept dbConcept in dbConcepts {
+            if dbConcept.code == code && dbConcepts[0].concept !is () {
+                // concept found
+                r4:ValueSetComposeIncludeConcept|error valueSetConcept = ByteToValueSetConcept(<byte[]>dbConcepts[0].concept);
+
+                if valueSetConcept is error {
+                    return r4:createFHIRError(
+                            "Error while parsing Concept, " + valueSetConcept.message(),
+                            r4:ERROR,
+                            r4:INVALID_REQUIRED,
+                            cause = valueSetConcept,
+                            httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+                }
+
+                return {
+                    url: system,
+                    concept: valueSetConcept
+                };
+            } else if dbConcept.systemFlag {
+                // system flag is true, so add the system to the list
+                valueSetSystems.push(dbConcept);
+            }
+        }
+
+        // lookup the code in code system table
+        if valueSetSystems.length() > 0 {
+            foreach store:ValueSetConcept valueSetSystem in valueSetSystems {
+                if valueSetSystem.system is string {
+                    var result = self.findConceptInCodeSystem(<string>valueSetSystem.system, code, valueSetSystem.'version);
+                    if result !is r4:FHIRError {
+                        return result;
+                    }
+                }
+            }
+        }
+
+        // not found in the value set
+        return r4:createFHIRError(
+                "Concept not found",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                cause = error("No matching Concept found"),
+                httpStatusCode = http:STATUS_NOT_FOUND);
+    }
+
+    private isolated function findConceptInCodeSystem(r4:uri system, r4:code code, string? version) returns terminology:CodeConceptDetails|r4:FHIRError {
+        // check whether the code system exists
+        var codeSystem = self.getStoreCodeSystemByURL(system, version);
+
+        if codeSystem !is store:CodeSystem {
+            return r4:createFHIRError(
+                    "CodeSystem not found",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = error("No matching CodeSystem found"),
+                    httpStatusCode = http:STATUS_NOT_FOUND);
+        }
+
+        sql:ParameterizedQuery sqlQueryWhereClause = `code = ${code} AND codesystemCodeSystemId = ${codeSystem.codeSystemId}`;
+
+        stream<store:Concept, persist:Error?> conceptStream = sClient->/concepts(store:Concept, whereClause = sqlQueryWhereClause);
+        store:Concept[]|error dbConcept = self.streamToStoreConcept(conceptStream);
+
+        if dbConcept is error {
+            return r4:createFHIRError(
+                    "Error while searching for Concept, " + dbConcept.message(),
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = dbConcept,
+                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        if dbConcept.length() == 0 {
+            // concept not found
+            return r4:createFHIRError(
+                    "Concept not found",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = error("No matching Concept found"),
+                    httpStatusCode = http:STATUS_NOT_FOUND);
+        }
+
+        r4:CodeSystemConcept|error codeSystemConcept = ByteToConcept(dbConcept[0].concept);
+
+        if codeSystemConcept is error {
+            return r4:createFHIRError(
+                    "Error while parsing Concept, " + codeSystemConcept.message(),
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = codeSystemConcept,
+                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        return {
+            url: system,
+            concept: codeSystemConcept
+        };
+    }
+
     // private functions
     private isolated function streamToStoreCodeSystem(stream<store:CodeSystem, persist:Error?> codeSystemStream) returns store:CodeSystem[]|error {
         store:CodeSystem[] dbCodeSystems = check from store:CodeSystem codeSystem in codeSystemStream
@@ -364,6 +470,12 @@ public isolated class TerminologySource {
         store:ValueSet[] dbValueSets = check from store:ValueSet valueSet in valueSetStream
             select valueSet;
         return dbValueSets;
+    }
+
+    private isolated function streamToStoreValueSetConcept(stream<store:ValueSetConcept, persist:Error?> conceptStream) returns store:ValueSetConcept[]|error {
+        store:ValueSetConcept[] dbConcepts = check from store:ValueSetConcept concept in conceptStream
+            select concept;
+        return dbConcepts;
     }
 
     private isolated function getAllCodeSystems() returns r4:CodeSystem[]|error {
@@ -531,31 +643,59 @@ public isolated class TerminologySource {
 
     // Save a ValueSet concept to the database
     private isolated function saveValueSetInclude(r4:ValueSetComposeInclude include, int valueSetId) returns error? {
-        boolean isConceptIncluded = include.concept is r4:ValueSetComposeIncludeConcept[];
+        // concept can be a code system or a set of concepts
+        if include.system is r4:uri {
+            boolean isConceptIncluded = include.concept is r4:ValueSetComposeIncludeConcept[];
 
-        if isConceptIncluded {
-            foreach r4:ValueSetComposeIncludeConcept item in <r4:ValueSetComposeIncludeConcept[]>include.concept {
-                _ = start self.saveValueSetConcept(item.clone(), valueSetId);
+            if isConceptIncluded {
+                foreach r4:ValueSetComposeIncludeConcept item in <r4:ValueSetComposeIncludeConcept[]>include.concept {
+                    _ = start self.saveValueSetConcept(item.clone(), valueSetId, include.system, include.'version);
+                }
+            } else {
+                store:ValueSetConceptInsert dbValueSetConceptInsert = {
+                    code: (),
+                    system: include.system,
+                    'version: include.'version,
+                    id: include.id,
+                    systemFlag: true,
+                    concept: (),
+                    valuesetValueSetId: valueSetId
+                };
+                
+                int[] result = check sClient->/valuesetconcepts.post([dbValueSetConceptInsert]);
+
+                // check for nested ValueSet references
+                // a valueset reference can be with a system, but only if the referenced ValueSet is based on that same system
+                if include.valueSet is r4:canonical[] {
+                    check self.saveNestedValueSetsInValueSetConcept(<r4:canonical[]>include.valueSet, result[0]);
+                }
             }
-        } else {
+        }
+
+        // check for nested ValueSet references
+        if include.valueSet is r4:canonical[] {
+            // valueset reference can't be with a system or concepts
             store:ValueSetConceptInsert dbValueSetConceptInsert = {
                 code: (),
-                system: include.system,
-                'version: include.'version,
+                system: (),
+                'version: (),
                 id: include.id,
-                systemFlag: true,
-                concept: check ConceptToByte(include),
+                systemFlag: false,
+                concept: (),
                 valuesetValueSetId: valueSetId
             };
-            _ = check sClient->/valuesetconcepts.post([dbValueSetConceptInsert]);
+
+            int[] result = check sClient->/valuesetconcepts.post([dbValueSetConceptInsert]);
+
+            check self.saveNestedValueSetsInValueSetConcept(<r4:canonical[]>include.valueSet, result[0]);
         }
     }
 
-    private isolated function saveValueSetConcept(r4:ValueSetComposeIncludeConcept concept, int valueSetId) returns error? {
+    private isolated function saveValueSetConcept(r4:ValueSetComposeIncludeConcept concept, int valueSetId, string? system, string? 'version) returns error? {
         store:ValueSetConceptInsert dbValueSetConceptInsert = {
             code: concept.code,
-            system: (),
-            'version: (),
+            system: system,
+            'version: 'version,
             id: concept.id,
             systemFlag: false,
             concept: check ConceptToByte(concept),
@@ -563,5 +703,29 @@ public isolated class TerminologySource {
         };
 
         _ = check sClient->/valuesetconcepts.post([dbValueSetConceptInsert]);
+    }
+
+    private isolated function saveNestedValueSetsInValueSetConcept(r4:canonical[] valueSets, int valueSetConceptId) returns error? {
+        // find for valueset in the database
+        foreach r4:canonical valueSet in valueSets {
+            string[] split = regex:split(valueSet, string `\|`);
+            var dbValueSet = self.getStoreValueSetByURL(split[0], split.length() > 1 ? split[1] : ());
+            
+            if dbValueSet is error {
+                return r4:createFHIRError(
+                        "ValueSet not found",
+                        r4:ERROR,
+                        r4:INVALID_REQUIRED,
+                        cause = error("No matching ValueSet found"),
+                        httpStatusCode = http:STATUS_NOT_FOUND);
+            }
+
+            // save the value set reference to the database
+            store:ValueSetInValueSetConceptInsert dbValueSetInValueSetConceptInsert = {
+                valuesetconceptValueSetConceptId: valueSetConceptId,
+                valuesetValueSetId: dbValueSet.valueSetId
+            };
+            _ = check sClient->/valuesetinvaluesetconcepts.post([dbValueSetInValueSetConceptInsert]);
+        }
     }
 }
