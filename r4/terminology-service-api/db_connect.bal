@@ -658,6 +658,7 @@ public isolated class TerminologySource {
                     'version: include.'version,
                     id: include.id,
                     systemFlag: true,
+                    valueSetFlag: include.valueSet is r4:canonical[],
                     concept: (),
                     valuesetValueSetId: valueSetId
                 };
@@ -666,7 +667,7 @@ public isolated class TerminologySource {
 
                 // check for nested ValueSet references
                 // a valueset reference can be with a system, but only if the referenced ValueSet is based on that same system
-                if include.valueSet is r4:canonical[] {
+                if dbValueSetConceptInsert.valueSetFlag {
                     check self.saveNestedValueSetsInValueSetConcept(<r4:canonical[]>include.valueSet, result[0]);
                 }
             }
@@ -681,6 +682,7 @@ public isolated class TerminologySource {
                 'version: (),
                 id: include.id,
                 systemFlag: false,
+                valueSetFlag: true,
                 concept: (),
                 valuesetValueSetId: valueSetId
             };
@@ -698,6 +700,7 @@ public isolated class TerminologySource {
             'version: 'version,
             id: concept.id,
             systemFlag: false,
+            valueSetFlag: false,
             concept: check ConceptToByte(concept),
             valuesetValueSetId: valueSetId
         };
