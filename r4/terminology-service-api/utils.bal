@@ -2,6 +2,8 @@ import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.parser;
 import ballerina/http;
+import terminology_service_api.store;
+import ballerina/persist;
 
 isolated function validationResultToParameters(international401:Parameters|r4:FHIRError concept) returns international401:Parameters|r4:FHIRError {
     international401:ParametersParameter[] params = [];
@@ -251,4 +253,28 @@ isolated function ByteToValueSetConcept(byte[] byteArray) returns r4:ValueSetCom
     r4:ValueSetComposeIncludeConcept parsedConcept = check conceptJson.fromJsonWithType(r4:ValueSetComposeIncludeConcept);
 
     return parsedConcept;
+}
+
+isolated function streamToStoreCodeSystem(stream<store:CodeSystem, persist:Error?> codeSystemStream) returns store:CodeSystem[]|error {
+    store:CodeSystem[] dbCodeSystems = check from store:CodeSystem codeSystem in codeSystemStream
+        select codeSystem;
+    return dbCodeSystems;
+}
+
+isolated function streamToStoreConcept(stream<store:Concept, persist:Error?> conceptStream) returns store:Concept[]|error {
+    store:Concept[] dbConcepts = check from store:Concept concept in conceptStream
+        select concept;
+    return dbConcepts;
+}
+
+isolated function streamToStoreValueSet(stream<store:ValueSet, persist:Error?> valueSetStream) returns store:ValueSet[]|error {
+    store:ValueSet[] dbValueSets = check from store:ValueSet valueSet in valueSetStream
+        select valueSet;
+    return dbValueSets;
+}
+
+isolated function streamToStoreValueSetConcept(stream<store:ValueSetConcept, persist:Error?> conceptStream) returns store:ValueSetConcept[]|error {
+    store:ValueSetConcept[] dbConcepts = check from store:ValueSetConcept concept in conceptStream
+        select concept;
+    return dbConcepts;
 }
