@@ -356,13 +356,11 @@ public isolated class TerminologySource {
             FROM concepts c
                 JOIN codesystems cs 
                     ON c.codesystemCodeSystemId = cs.codeSystemId
-                JOIN valueset_compose_include_code_systems vcics 
-                    ON vcics.codesystemCodeSystemId = cs.codeSystemId
                 JOIN valueset_compose_includes vci 
-                    ON vcics.valuesetcomposeValueSetComposeIncludeId = vci.valueSetComposeIncludeId
+                    ON cs.codeSystemId = vci.codeSystemId
                 JOIN valuesets vs 
                     ON vci.valuesetValueSetId = vs.valueSetId
-            WHERE vs.valueSetId = ${valueset.valueSetId} AND c.code = ${code} AND vci.systemFlag = TRUE AND vci.conceptFlag = FALSE;`;
+            WHERE vs.valueSetId = ${valueset.valueSetId} AND c.code = ${code}`;
 
         dbConcept = self.getStoreConcept(sqlQuery);
         if dbConcept !is r4:FHIRError {
@@ -376,7 +374,7 @@ public isolated class TerminologySource {
             }
         }
 
-        // // checks for nested valueset references
+        // checks for nested valueset references
         sqlQuery = `SELECT vs_included.*
         FROM valuesets vs_parent
             JOIN valueset_compose_includes vci 
@@ -385,7 +383,7 @@ public isolated class TerminologySource {
                 ON vci.valueSetComposeIncludeId = vcivs.valuesetcomposeValueSetComposeIncludeId
             JOIN valuesets vs_included 
                 ON vcivs.valuesetValueSetId = vs_included.valueSetId
-        WHERE vci.valueSetFlag = TRUE AND vci.conceptFlag = FALSE AND vs_parent.valueSetId = ${valueset.valueSetId};`;
+        WHERE vs_parent.valueSetId = ${valueset.valueSetId}`;
 
         stream<store:ValueSet, persist:Error?> valueSetStream = sClient->queryNativeSQL(sqlQuery);
         store:ValueSet[]|error nestedValueSets = streamToStoreValueSet(valueSetStream);
@@ -653,7 +651,7 @@ public isolated class TerminologySource {
                 }
             } else {
                 // save valueset code system
-                _ = start self.saveValueSetCodeSystem(valueSetId, codesystem.codeSystemId, include.valueSet.clone());
+                _ = start self.saveValueSetCodeSystem(valueSetId, codesystem.codeSystemId);
             }
         }
 
@@ -672,7 +670,8 @@ public isolated class TerminologySource {
             systemFlag: false,
             valueSetFlag: false,
             conceptFlag: true,
-            valuesetValueSetId: valueSetId
+            valuesetValueSetId: valueSetId,
+            codeSystemId: ()
         };
         int[] result = check sClient->/valuesetcomposeincludes.post([dbValueSetComposeIncludeInsert]);
 
@@ -684,27 +683,15 @@ public isolated class TerminologySource {
         _ = check sClient->/valuesetcomposeincludeconcepts.post([dbConceptInsert]);
     }
 
-    private isolated function saveValueSetCodeSystem(int valueSetId, int codeSystemId, r4:canonical[]? valueSets) returns error? {
+    private isolated function saveValueSetCodeSystem(int valueSetId, int codeSystemId) returns error? {
         store:ValueSetComposeIncludeInsert dbValueSetComposeIncludeInsert = {
             systemFlag: true,
-            valueSetFlag: valueSets is r4:canonical[],
+            valueSetFlag: false,
             conceptFlag: false,
-            valuesetValueSetId: valueSetId
+            valuesetValueSetId: valueSetId,
+            codeSystemId: codeSystemId
         };
-        int[] result = check sClient->/valuesetcomposeincludes.post([dbValueSetComposeIncludeInsert]);
-
-        // save the code system reference to the database
-        store:ValueSetComposeIncludeCodeSystemInsert dbCodeSystemInsert = {
-            valuesetcomposeValueSetComposeIncludeId: result[0],
-            codesystemCodeSystemId: codeSystemId
-        };
-        _ = check sClient->/valuesetcomposeincludecodesystems.post([dbCodeSystemInsert]);
-
-        // check for nested ValueSet references
-        // a valueset reference can be with a system, but only if the referenced ValueSet is based on that same system
-        if dbValueSetComposeIncludeInsert.valueSetFlag {
-            check self.saveNestedValueSetsInValueSetComposeInclude(<r4:canonical[]>valueSets, result[0]);
-        }
+        _ = check sClient->/valuesetcomposeincludes.post([dbValueSetComposeIncludeInsert]);
     }
 
     private isolated function saveValueSetValueSet(int valueSetId, r4:canonical[] valueSets) returns error? {
@@ -713,7 +700,8 @@ public isolated class TerminologySource {
             systemFlag: false,
             valueSetFlag: true,
             conceptFlag: false,
-            valuesetValueSetId: valueSetId
+            valuesetValueSetId: valueSetId,
+            codeSystemId: ()
         };
 
         int[] result = check sClient->/valuesetcomposeincludes.post([dbValueSetComposeIncludeInsert]);
