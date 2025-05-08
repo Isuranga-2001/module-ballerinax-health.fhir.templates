@@ -113,16 +113,17 @@ public isolated class TerminologySource {
         
         // find the concept in the codesystem table
         terminology:CodeConceptDetails|r4:FHIRError conceptDetails = self.findConceptInCodeSystem(system, code, version);
-        if conceptDetails is r4:FHIRError {
-            return r4:createFHIRError(
-                    conceptDetails.message(),
-                    r4:ERROR,
-                    r4:INVALID_REQUIRED,
-                    cause = conceptDetails,
-                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+        if conceptDetails !is r4:FHIRError {
+            return conceptDetails;
         }
 
-        return conceptDetails;
+        // concept not found in both tables
+        return r4:createFHIRError(
+                "Concept not found",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                cause = error("No matching Concept found"),
+                httpStatusCode = http:STATUS_NOT_FOUND);
     }
 
     public isolated function findValueSet(r4:uri? system, string? id, string? version) returns r4:ValueSet|r4:FHIRError {
@@ -220,7 +221,7 @@ public isolated class TerminologySource {
             : ``;
 
         stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause = whereClause);
-        store:CodeSystem[]|error dbCodeSystems = self.streamToStoreCodeSystem(codeSystemStream);
+        store:CodeSystem[]|error dbCodeSystems = streamToStoreCodeSystem(codeSystemStream);
 
         if dbCodeSystems is error {
             return r4:createFHIRError(
@@ -290,7 +291,7 @@ public isolated class TerminologySource {
             : ``;
 
         stream<store:ValueSet, persist:Error?> valueSetStream = sClient->/valuesets(store:ValueSet, whereClause = whereClause);
-        store:ValueSet[]|error dbValueSets = self.streamToStoreValueSet(valueSetStream);
+        store:ValueSet[]|error dbValueSets = streamToStoreValueSet(valueSetStream);
 
         if dbValueSets is error {
             return r4:createFHIRError(
@@ -326,11 +327,11 @@ public isolated class TerminologySource {
                     cause = error("No matching CodeSystem found"),
                     httpStatusCode = http:STATUS_NOT_FOUND);
         }
-
-        sql:ParameterizedQuery sqlQueryWhereClause = `valuesetValueSetId = ${valueset.valueSetId} AND (code = ${code} OR systemFlag = TRUE)`;
-
+        
+        // checks for valueset concepts
+        sql:ParameterizedQuery sqlQueryWhereClause = `valuesetValueSetId = ${valueset.valueSetId} AND code = ${code}`;
         stream<store:ValueSetConcept, persist:Error?> conceptStream = sClient->/valuesetconcepts(store:ValueSetConcept, sqlQueryWhereClause);
-        store:ValueSetConcept[]|error dbConcepts = self.streamToStoreValueSetConcept(conceptStream);
+        store:ValueSetConcept[]|error dbConcepts = streamToStoreValueSetConcept(conceptStream);
 
         if dbConcepts is error {
             return r4:createFHIRError(
@@ -341,44 +342,32 @@ public isolated class TerminologySource {
                     httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
         }
 
-        if dbConcepts.length() == 0 {
-            // concept not found
-            return r4:createFHIRError(
-                    "Concept not found",
-                    r4:ERROR,
-                    r4:INVALID_REQUIRED,
-                    cause = error("No matching Concept found"),
-                    httpStatusCode = http:STATUS_NOT_FOUND);
-        }
+        if dbConcepts.length() > 0 {
+            // concept found
+            r4:ValueSetComposeIncludeConcept|error valueSetConcept = ByteToValueSetConcept(<byte[]>dbConcepts[0].concept);
 
-        store:ValueSetConcept[] valueSetSystems = [];
-
-        // check whether the code in the concepts
-        foreach store:ValueSetConcept dbConcept in dbConcepts {
-            if dbConcept.code == code && dbConcepts[0].concept !is () {
-                // concept found
-                r4:ValueSetComposeIncludeConcept|error valueSetConcept = ByteToValueSetConcept(<byte[]>dbConcepts[0].concept);
-
-                if valueSetConcept is error {
-                    return r4:createFHIRError(
-                            "Error while parsing Concept, " + valueSetConcept.message(),
-                            r4:ERROR,
-                            r4:INVALID_REQUIRED,
-                            cause = valueSetConcept,
-                            httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
-                }
-
+            if valueSetConcept !is error {
                 return {
                     url: system,
                     concept: valueSetConcept
                 };
-            } else if dbConcept.systemFlag {
-                // system flag is true, so add the system to the list
-                valueSetSystems.push(dbConcept);
             }
+        } 
+
+        // checks for code systems
+        sqlQueryWhereClause = `valuesetValueSetId = ${valueset.valueSetId} AND systemFlag = TRUE`;
+        conceptStream = sClient->/valuesetconcepts(store:ValueSetConcept, sqlQueryWhereClause);
+        store:ValueSetConcept[]|error valueSetSystems = streamToStoreValueSetConcept(conceptStream);
+
+        if valueSetSystems is error {
+            return r4:createFHIRError(
+                    "Error while searching for Concept, " + valueSetSystems.message(),
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = valueSetSystems,
+                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
         }
 
-        // lookup the code in code system table
         if valueSetSystems.length() > 0 {
             foreach store:ValueSetConcept valueSetSystem in valueSetSystems {
                 if valueSetSystem.system is string {
@@ -386,6 +375,35 @@ public isolated class TerminologySource {
                     if result !is r4:FHIRError {
                         return result;
                     }
+                }
+            }
+        }
+
+        // checks for nested valueset references
+        sqlQueryWhereClause = `SELECT vs.*
+            FROM valueset_concepts vc
+                JOIN valueset_in_valueset_concepts vic ON vc.valueSetConceptId = vic.valuesetconceptValueSetConceptId
+                JOIN valuesets vs ON vic.valuesetValueSetId = vs.valueSetId
+            WHERE vc.valueSetFlag = TRUE
+                AND vc.valuesetValueSetId = ${valueset.valueSetId};`;
+
+        stream<store:ValueSet, persist:Error?> valueSetStream = sClient->queryNativeSQL(sqlQueryWhereClause);
+        store:ValueSet[]|error nestedValueSets = streamToStoreValueSet(valueSetStream);
+
+        if nestedValueSets is error {
+            return r4:createFHIRError(
+                    "Error while searching for Concept, " + nestedValueSets.message(),
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = nestedValueSets,
+                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        if nestedValueSets.length() > 0 {
+            foreach store:ValueSet nestedValueSet in nestedValueSets {
+                var result =  self.findConceptInValueSet(nestedValueSet.url, code, nestedValueSet.version);
+                if result !is r4:FHIRError {
+                    return result;
                 }
             }
         }
@@ -415,7 +433,7 @@ public isolated class TerminologySource {
         sql:ParameterizedQuery sqlQueryWhereClause = `code = ${code} AND codesystemCodeSystemId = ${codeSystem.codeSystemId}`;
 
         stream<store:Concept, persist:Error?> conceptStream = sClient->/concepts(store:Concept, whereClause = sqlQueryWhereClause);
-        store:Concept[]|error dbConcept = self.streamToStoreConcept(conceptStream);
+        store:Concept[]|error dbConcept = streamToStoreConcept(conceptStream);
 
         if dbConcept is error {
             return r4:createFHIRError(
@@ -454,29 +472,6 @@ public isolated class TerminologySource {
     }
 
     // private functions
-    private isolated function streamToStoreCodeSystem(stream<store:CodeSystem, persist:Error?> codeSystemStream) returns store:CodeSystem[]|error {
-        store:CodeSystem[] dbCodeSystems = check from store:CodeSystem codeSystem in codeSystemStream
-            select codeSystem;
-        return dbCodeSystems;
-    }
-
-    private isolated function streamToStoreConcept(stream<store:Concept, persist:Error?> conceptStream) returns store:Concept[]|error {
-        store:Concept[] dbConcepts = check from store:Concept concept in conceptStream
-            select concept;
-        return dbConcepts;
-    }
-
-    private isolated function streamToStoreValueSet(stream<store:ValueSet, persist:Error?> valueSetStream) returns store:ValueSet[]|error {
-        store:ValueSet[] dbValueSets = check from store:ValueSet valueSet in valueSetStream
-            select valueSet;
-        return dbValueSets;
-    }
-
-    private isolated function streamToStoreValueSetConcept(stream<store:ValueSetConcept, persist:Error?> conceptStream) returns store:ValueSetConcept[]|error {
-        store:ValueSetConcept[] dbConcepts = check from store:ValueSetConcept concept in conceptStream
-            select concept;
-        return dbConcepts;
-    }
 
     private isolated function getAllCodeSystems() returns r4:CodeSystem[]|error {
         stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems();
@@ -542,7 +537,6 @@ public isolated class TerminologySource {
                     cause = error("No matching CodeSystem found"),
                     httpStatusCode = http:STATUS_NOT_FOUND);
         }
-
         return codeSystems[0];
     }
 
