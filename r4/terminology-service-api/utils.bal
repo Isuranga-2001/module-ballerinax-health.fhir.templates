@@ -247,14 +247,6 @@ isolated function ByteToValueSet(byte[] byteArray) returns r4:ValueSet|error {
     return parsedValueSet;
 }
 
-isolated function ByteToValueSetConcept(byte[] byteArray) returns r4:ValueSetComposeIncludeConcept|error {
-    string conceptJsonString = check 'string:fromBytes(byteArray);
-    json conceptJson = check conceptJsonString.fromJsonString();
-    r4:ValueSetComposeIncludeConcept parsedConcept = check conceptJson.fromJsonWithType(r4:ValueSetComposeIncludeConcept);
-
-    return parsedConcept;
-}
-
 isolated function streamToStoreCodeSystem(stream<store:CodeSystem, persist:Error?> codeSystemStream) returns store:CodeSystem[]|error {
     store:CodeSystem[] dbCodeSystems = check from store:CodeSystem codeSystem in codeSystemStream
         select codeSystem;
@@ -273,8 +265,8 @@ isolated function streamToStoreValueSet(stream<store:ValueSet, persist:Error?> v
     return dbValueSets;
 }
 
-isolated function streamToStoreValueSetConcept(stream<store:ValueSetConcept, persist:Error?> conceptStream) returns store:ValueSetConcept[]|error {
-    store:ValueSetConcept[] dbConcepts = check from store:ValueSetConcept concept in conceptStream
+isolated function streamToStoreValueSetComposeInclude(stream<store:ValueSetComposeInclude, persist:Error?> conceptStream) returns store:ValueSetComposeInclude[]|error {
+    store:ValueSetComposeInclude[] dbConcepts = check from store:ValueSetComposeInclude concept in conceptStream
         select concept;
     return dbConcepts;
 }
