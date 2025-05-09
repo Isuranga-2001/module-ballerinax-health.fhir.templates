@@ -194,7 +194,7 @@ isolated function designationToParameter(r4:CodeSystemConceptDesignation designa
     return param;
 }
 
-isolated function CodeSystemToByte(r4:CodeSystem codeSystem) returns byte[]|r4:FHIRError {
+isolated function codeSystemToByte(r4:CodeSystem codeSystem) returns byte[]|r4:FHIRError {
     // remove concepts from the codeSystem object
     // because concepts are stored in separate table in database
     r4:CodeSystem codeSystemWithoutConcepts = codeSystem.clone();
@@ -203,7 +203,7 @@ isolated function CodeSystemToByte(r4:CodeSystem codeSystem) returns byte[]|r4:F
     byte[] byteArray = codeSystemWithoutConcepts.toJsonString().toBytes();
 
     // check whether the conversion was successful
-    r4:CodeSystem|error parsedcs = ByteToCodeSystem(byteArray);
+    r4:CodeSystem|error parsedcs = byteToCodeSystem(byteArray);
 
     if parsedcs is r4:CodeSystem {
         return byteArray;
@@ -217,18 +217,18 @@ isolated function CodeSystemToByte(r4:CodeSystem codeSystem) returns byte[]|r4:F
     }
 }
 
-isolated function ByteToCodeSystem(byte[] byteArray) returns r4:CodeSystem|error {
+isolated function byteToCodeSystem(byte[] byteArray) returns r4:CodeSystem|error {
     string codeSystemJsonString = check 'string:fromBytes(byteArray);
     r4:CodeSystem parsedCodeSystem = check parser:parse(codeSystemJsonString).ensureType();
 
     return parsedCodeSystem;
 }
 
-isolated function ConceptToByte(r4:CodeSystemConcept|r4:ValueSetComposeIncludeConcept concept) returns byte[]|r4:FHIRError {
+isolated function conceptToByte(r4:CodeSystemConcept|r4:ValueSetComposeIncludeConcept concept) returns byte[]|r4:FHIRError {
     return concept.toJsonString().toBytes();
 }
 
-isolated function ByteToConcept(byte[] byteArray) returns r4:CodeSystemConcept|error {
+isolated function byteToConcept(byte[] byteArray) returns r4:CodeSystemConcept|error {
     string conceptJsonString = check 'string:fromBytes(byteArray);
     json conceptJson = check conceptJsonString.fromJsonString();
     r4:CodeSystemConcept parsedConcept = check conceptJson.fromJsonWithType(r4:CodeSystemConcept);
@@ -236,11 +236,11 @@ isolated function ByteToConcept(byte[] byteArray) returns r4:CodeSystemConcept|e
     return parsedConcept;
 }
 
-isolated function ValueSetToByte(r4:ValueSet valueSet) returns byte[]|r4:FHIRError {
+isolated function valueSetToByte(r4:ValueSet valueSet) returns byte[]|r4:FHIRError {
     return valueSet.toJsonString().toBytes();
 }
 
-isolated function ByteToValueSet(byte[] byteArray) returns r4:ValueSet|error {
+isolated function byteToValueSet(byte[] byteArray) returns r4:ValueSet|error {
     string valueSetJsonString = check 'string:fromBytes(byteArray);
     r4:ValueSet parsedValueSet = check parser:parse(valueSetJsonString).ensureType();
 
