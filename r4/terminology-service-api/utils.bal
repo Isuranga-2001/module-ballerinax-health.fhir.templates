@@ -2,6 +2,8 @@ import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.parser;
 import ballerina/http;
+import terminology_service_api.store;
+import ballerina/persist;
 
 isolated function validationResultToParameters(international401:Parameters|r4:FHIRError concept) returns international401:Parameters|r4:FHIRError {
     international401:ParametersParameter[] params = [];
@@ -222,7 +224,7 @@ isolated function ByteToCodeSystem(byte[] byteArray) returns r4:CodeSystem|error
     return parsedCodeSystem;
 }
 
-isolated function ConceptToByte(r4:CodeSystemConcept concept) returns byte[]|r4:FHIRError {
+isolated function ConceptToByte(r4:CodeSystemConcept|r4:ValueSetComposeIncludeConcept concept) returns byte[]|r4:FHIRError {
     return concept.toJsonString().toBytes();
 }
 
@@ -243,4 +245,28 @@ isolated function ByteToValueSet(byte[] byteArray) returns r4:ValueSet|error {
     r4:ValueSet parsedValueSet = check parser:parse(valueSetJsonString).ensureType();
 
     return parsedValueSet;
+}
+
+isolated function streamToStoreCodeSystem(stream<store:CodeSystem, persist:Error?> codeSystemStream) returns store:CodeSystem[]|error {
+    store:CodeSystem[] dbCodeSystems = check from store:CodeSystem codeSystem in codeSystemStream
+        select codeSystem;
+    return dbCodeSystems;
+}
+
+isolated function streamToStoreConcept(stream<store:Concept, persist:Error?> conceptStream) returns store:Concept[]|error {
+    store:Concept[] dbConcepts = check from store:Concept concept in conceptStream
+        select concept;
+    return dbConcepts;
+}
+
+isolated function streamToStoreValueSet(stream<store:ValueSet, persist:Error?> valueSetStream) returns store:ValueSet[]|error {
+    store:ValueSet[] dbValueSets = check from store:ValueSet valueSet in valueSetStream
+        select valueSet;
+    return dbValueSets;
+}
+
+isolated function streamToStoreValueSetComposeInclude(stream<store:ValueSetComposeInclude, persist:Error?> conceptStream) returns store:ValueSetComposeInclude[]|error {
+    store:ValueSetComposeInclude[] dbConcepts = check from store:ValueSetComposeInclude concept in conceptStream
+        select concept;
+    return dbConcepts;
 }

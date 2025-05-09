@@ -15,6 +15,7 @@ public type CodeSystem record {|
     string publisher;
     byte[] codeSystem;
     Concept[] concepts;
+	ValueSetComposeIncludeCodeSystem[] valuesetcomposeincludecodesystem;
 |};
 
 @sql:Name {value: "concepts"}
@@ -49,13 +50,16 @@ public type ValueSet record {|
 public type ValueSetComposeInclude record {|
     @sql:Generated
     readonly int valueSetComposeIncludeId;
+    // string? system; // reference to the code system
+    // string? version; // version for the code system
+    // string? code; // code for the concept
     boolean systemFlag;
     boolean valueSetFlag;
     boolean conceptFlag;
     ValueSet valueSet;
-    ValueSetComposeIncludeValueSet[] valuesetcomposeincludevalueset;
+    ValueSetComposeIncludeValueSet[] valueSets;
+	ValueSetComposeIncludeCodeSystem[] valuesetcomposeincludecodesystem;
 	ValueSetComposeIncludeConcept[] valuesetcomposeincludeconcept;
-    int? codeSystemId;
 |};
 
 @sql:Name {value: "valueset_compose_include_value_sets"}
@@ -64,6 +68,14 @@ public type ValueSetComposeIncludeValueSet record {|
     readonly int valueSetComposeIncludeValueSetId;
 	ValueSetComposeInclude valuesetCompose;
 	ValueSet valueset;
+|};
+
+@sql:Name {value: "valueset_compose_include_code_systems"}
+public type ValueSetComposeIncludeCodeSystem record {|
+    @sql:Generated
+    readonly int valueSetComposeIncludeCodeSystemId;
+    ValueSetComposeInclude valuesetCompose;
+    CodeSystem codeSystem;
 |};
 
 @sql:Name {value: "valueset_compose_include_concepts"}
