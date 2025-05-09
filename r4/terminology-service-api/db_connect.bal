@@ -376,14 +376,14 @@ public isolated class TerminologySource {
 
         // checks for nested valueset references
         sqlQuery = `SELECT vs_included.*
-        FROM valuesets vs_parent
-            JOIN valueset_compose_includes vci 
-                ON vs_parent.valueSetId = vci.valuesetValueSetId
-            JOIN valueset_compose_include_value_sets vcivs 
-                ON vci.valueSetComposeIncludeId = vcivs.valuesetcomposeValueSetComposeIncludeId
-            JOIN valuesets vs_included 
-                ON vcivs.valuesetValueSetId = vs_included.valueSetId
-        WHERE vs_parent.valueSetId = ${valueset.valueSetId}`;
+            FROM valuesets vs_parent
+                JOIN valueset_compose_includes vci 
+                    ON vs_parent.valueSetId = vci.valuesetValueSetId
+                JOIN valueset_compose_include_value_sets vcivs 
+                    ON vci.valueSetComposeIncludeId = vcivs.valuesetcomposeValueSetComposeIncludeId
+                JOIN valuesets vs_included 
+                    ON vcivs.valuesetValueSetId = vs_included.valueSetId
+            WHERE vs_parent.valueSetId = ${valueset.valueSetId}`;
 
         stream<store:ValueSet, persist:Error?> valueSetStream = sClient->queryNativeSQL(sqlQuery);
         store:ValueSet[]|error nestedValueSets = streamToStoreValueSet(valueSetStream);
