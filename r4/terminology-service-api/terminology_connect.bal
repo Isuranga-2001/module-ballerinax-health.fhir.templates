@@ -1,10 +1,10 @@
+import ballerina/data.jsondata;
 import ballerina/http;
 import ballerina/regex;
 import ballerina/time;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
-import ballerina/data.jsondata;
 
 final TerminologySource db_terminology_source = new ();
 
@@ -570,16 +570,27 @@ isolated function getSystemAndCode(string input) returns map<string> {
 public isolated function addCodeSystemFromStream(http:Request codeSystemPayload) returns r4:FHIRError? {
     do {
         stream<byte[], error?> payloadStream = check codeSystemPayload.getByteStream();
-        r4:CodeSystem codeSystem = check jsondata:parseStream(s = payloadStream);
+
+        ParseCodeSystem parsedCodeSystem = check jsondata:parseStream(s = payloadStream);
+        if parsedCodeSystem.content is () || parsedCodeSystem.status is () {
+            return r4:createFHIRError(
+                    "Invalid request payload",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    httpStatusCode = http:STATUS_BAD_REQUEST);
+        }
+
+        r4:CodeSystem codeSystem = parseCodeSystemToR4CodeSystem(parsedCodeSystem);
 
         if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
             return terminology:addCodeSystem(codeSystem, terminology = terminology_source);
         } else {
             return terminology:addCodeSystem(codeSystem);
         }
+
     } on fail var e {
         return r4:createFHIRError(
-                "Invalid or empty request payload",
+                "Invalid request payload",
                 r4:ERROR,
                 r4:INVALID_REQUIRED,
                 cause = e,
@@ -590,7 +601,16 @@ public isolated function addCodeSystemFromStream(http:Request codeSystemPayload)
 public isolated function addValueSetFromStream(http:Request valueSetPayload) returns r4:FHIRError? {
     do {
         stream<byte[], error?> payloadStream = check valueSetPayload.getByteStream();
-        r4:ValueSet valueSet = check jsondata:parseStream(s = payloadStream);
+        ParseValueSet parseValueSet = check jsondata:parseStream(s = payloadStream);
+        if parseValueSet.status is () {
+            return r4:createFHIRError(
+                    "Invalid request payload",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    httpStatusCode = http:STATUS_BAD_REQUEST);
+        }
+
+        r4:ValueSet valueSet = parseValueSetToR4ValueSet(parseValueSet);
 
         if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
             return terminology:addValueSet(valueSet, terminology = terminology_source);
@@ -599,7 +619,7 @@ public isolated function addValueSetFromStream(http:Request valueSetPayload) ret
         }
     } on fail var e {
         return r4:createFHIRError(
-                "Invalid or empty request payload",
+                "Invalid request payload",
                 r4:ERROR,
                 r4:INVALID_REQUIRED,
                 cause = e,
