@@ -1,5 +1,4 @@
 {
     "resourceType": "ValueSet",
-    "status": "invalid-status",
     "name": "InvalidValueSet"
 }
