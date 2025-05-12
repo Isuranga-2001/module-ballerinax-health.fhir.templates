@@ -8,7 +8,8 @@ import ballerina/regex;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.terminology;
 
-final store:Client sClient = check new ();
+final store:Client sClient = check new();
+final store:H2Client h2Client = check new ("jdbc:h2:./test", "sa", "");
 
 public isolated class TerminologySource {
     *terminology:Terminology;
@@ -27,7 +28,7 @@ public isolated class TerminologySource {
             codeSystem: check codeSystemToByte(codeSystem)
         };
 
-        int[]|persist:Error response = sClient->/codesystems.post([dbCodeSystemInsert]);
+        int[]|persist:Error response = (test_env ? h2Client : sClient)->/codesystems.post([dbCodeSystemInsert]);
         if (response is persist:Error) {
             // error while adding code system to the database
             return r4:createFHIRError(
@@ -56,7 +57,7 @@ public isolated class TerminologySource {
             valueSet: check valueSetToByte(valueSet)
         };
 
-        int[]|persist:Error response = sClient->/valuesets.post([dbValueSetInsert]);
+        int[]|persist:Error response = (test_env ? h2Client : sClient)->/valuesets.post([dbValueSetInsert]);
         if (response is persist:Error) {
             // error while adding value set to the database
             return r4:createFHIRError(
@@ -220,7 +221,7 @@ public isolated class TerminologySource {
             ? sql:queryConcat(...whereFragments)
             : ``;
 
-        stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause = whereClause);
+        stream<store:CodeSystem, persist:Error?> codeSystemStream = (test_env ? h2Client : sClient)->/codesystems(store:CodeSystem, whereClause = whereClause);
         store:CodeSystem[]|error dbCodeSystems = streamToStoreCodeSystem(codeSystemStream);
 
         if dbCodeSystems is error {
@@ -290,7 +291,7 @@ public isolated class TerminologySource {
             ? sql:queryConcat(...whereFragments)
             : ``;
 
-        stream<store:ValueSet, persist:Error?> valueSetStream = sClient->/valuesets(store:ValueSet, whereClause = whereClause);
+        stream<store:ValueSet, persist:Error?> valueSetStream = (test_env ? h2Client : sClient)->/valuesets(store:ValueSet, whereClause = whereClause);
         store:ValueSet[]|error dbValueSets = streamToStoreValueSet(valueSetStream);
 
         if dbValueSets is error {
@@ -386,7 +387,7 @@ isolated function findConceptInValueSet(r4:uri system, r4:code code, string? ver
                 ON vcivs.valuesetValueSetId = vs_included.valueSetId
         WHERE vs_parent.valueSetId = ${valueset.valueSetId}`;
 
-    stream<store:ValueSet, persist:Error?> valueSetStream = sClient->queryNativeSQL(sqlQuery);
+    stream<store:ValueSet, persist:Error?> valueSetStream = (test_env ? h2Client : sClient)->queryNativeSQL(sqlQuery);
     store:ValueSet[]|error nestedValueSets = streamToStoreValueSet(valueSetStream);
 
     if nestedValueSets is error {
@@ -454,7 +455,7 @@ isolated function findConceptInCodeSystem(r4:uri system, r4:code code, string? v
 // functions
 
 isolated function getAllCodeSystems() returns r4:CodeSystem[]|error {
-    stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems();
+    stream<store:CodeSystem, persist:Error?> codeSystemStream = (test_env ? h2Client : sClient)->/codesystems();
     store:CodeSystem[] dbCodeSystems = check streamToStoreCodeSystem(codeSystemStream);
 
     r4:CodeSystem[] codeSystemArray = [];
@@ -477,7 +478,7 @@ isolated function getCodeSystemByID(string id, string? version = ()) returns r4:
         ? `id = ${id} ORDER BY version DESC LIMIT 1`
         : `id = ${id} AND version = ${version}`;
 
-    stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause = sqlQueryWhereClause);
+    stream<store:CodeSystem, persist:Error?> codeSystemStream = (test_env ? h2Client : sClient)->/codesystems(store:CodeSystem, whereClause = sqlQueryWhereClause);
     store:CodeSystem[] codeSystems = check streamToStoreCodeSystem(codeSystemStream);
 
     if codeSystems.length() == 0 {
@@ -503,7 +504,7 @@ isolated function getStoreCodeSystemByURL(string system, string? version = ()) r
         ? `url = ${system} ORDER BY version DESC LIMIT 1`
         : `url = ${system} AND version = ${version}`;
 
-    stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause = sqlQueryWhereClause);
+    stream<store:CodeSystem, persist:Error?> codeSystemStream = (test_env ? h2Client : sClient)->/codesystems(store:CodeSystem, whereClause = sqlQueryWhereClause);
     store:CodeSystem[] codeSystems = check streamToStoreCodeSystem(codeSystemStream);
 
     if codeSystems.length() == 0 {
@@ -522,7 +523,7 @@ isolated function getValueSetByID(string id, string? version = ()) returns r4:Va
         ? `id = ${id} ORDER BY version DESC LIMIT 1`
         : `id = ${id} AND version = ${version}`;
 
-    stream<store:ValueSet, persist:Error?> valueSetStream = sClient->/valuesets(store:ValueSet, whereClause = sqlQueryWhereClause);
+    stream<store:ValueSet, persist:Error?> valueSetStream = (test_env ? h2Client : sClient)->/valuesets(store:ValueSet, whereClause = sqlQueryWhereClause);
     store:ValueSet[] valueSets = check streamToStoreValueSet(valueSetStream);
 
     if valueSets.length() == 0 {
@@ -549,7 +550,7 @@ isolated function getStoreValueSetByURL(string system, string? version = ()) ret
         ? `url = ${system} ORDER BY version DESC LIMIT 1`
         : `url = ${system} AND version = ${version}`;
 
-    stream<store:ValueSet, persist:Error?> valueSetStream = sClient->/valuesets(store:ValueSet, whereClause = sqlQueryWhereClause);
+    stream<store:ValueSet, persist:Error?> valueSetStream = (test_env ? h2Client : sClient)->/valuesets(store:ValueSet, whereClause = sqlQueryWhereClause);
     store:ValueSet[] valueSets = check streamToStoreValueSet(valueSetStream);
 
     if valueSets.length() == 0 {
@@ -568,7 +569,7 @@ isolated function getStoreConceptByCode(int codeSystemId, r4:code code) returns 
 }
 
 isolated function getStoreConcept(sql:ParameterizedQuery sqlQuery) returns store:Concept|r4:FHIRError {
-    stream<store:Concept, persist:Error?> conceptStream = sClient->queryNativeSQL(sqlQuery);
+    stream<store:Concept, persist:Error?> conceptStream = (test_env ? h2Client : sClient)->queryNativeSQL(sqlQuery);
     store:Concept[]|error dbConcepts = streamToStoreConcept(conceptStream);
 
     if dbConcepts is error {
@@ -622,7 +623,7 @@ isolated function saveCodeSystemConcept(r4:CodeSystemConcept concept, int codeSy
         parentConceptId: parentId
     };
 
-    int[] id = check sClient->/concepts.post([dbConceptInsert]);
+    int[] id = check (test_env ? h2Client : sClient)->/concepts.post([dbConceptInsert]);
     return id[0];
 }
 
@@ -674,14 +675,14 @@ isolated function saveValueSetConcept(r4:ValueSetComposeIncludeConcept concept, 
         valuesetValueSetId: valueSetId,
         codeSystemId: ()
     };
-    int[] result = check sClient->/valuesetcomposeincludes.post([dbValueSetComposeIncludeInsert]);
+    int[] result = check (test_env ? h2Client : sClient)->/valuesetcomposeincludes.post([dbValueSetComposeIncludeInsert]);
 
     // save the concept reference to the database
     store:ValueSetComposeIncludeConceptInsert dbConceptInsert = {
         valuesetcomposeValueSetComposeIncludeId: result[0],
         conceptConceptId: dbConcept.conceptId
     };
-    _ = check sClient->/valuesetcomposeincludeconcepts.post([dbConceptInsert]);
+    _ = check (test_env ? h2Client : sClient)->/valuesetcomposeincludeconcepts.post([dbConceptInsert]);
 }
 
 isolated function saveValueSetCodeSystem(int valueSetId, int codeSystemId) returns error? {
@@ -692,7 +693,7 @@ isolated function saveValueSetCodeSystem(int valueSetId, int codeSystemId) retur
         valuesetValueSetId: valueSetId,
         codeSystemId: codeSystemId
     };
-    _ = check sClient->/valuesetcomposeincludes.post([dbValueSetComposeIncludeInsert]);
+    _ = check (test_env ? h2Client : sClient)->/valuesetcomposeincludes.post([dbValueSetComposeIncludeInsert]);
 }
 
 isolated function saveValueSetValueSet(int valueSetId, r4:canonical[] valueSets) returns error? {
@@ -705,7 +706,7 @@ isolated function saveValueSetValueSet(int valueSetId, r4:canonical[] valueSets)
         codeSystemId: ()
     };
 
-    int[] result = check sClient->/valuesetcomposeincludes.post([dbValueSetComposeIncludeInsert]);
+    int[] result = check (test_env ? h2Client : sClient)->/valuesetcomposeincludes.post([dbValueSetComposeIncludeInsert]);
 
     check saveNestedValueSetsInValueSetComposeInclude(valueSets, result[0]);
 }
@@ -730,6 +731,6 @@ isolated function saveNestedValueSetsInValueSetComposeInclude(r4:canonical[] val
             valuesetcomposeValueSetComposeIncludeId: dbValueSetComposeIncludeId,
             valuesetValueSetId: dbValueSet.valueSetId
         };
-        _ = check sClient->/valuesetcomposeincludevaluesets.post([dbValueSetInsert]);
+        _ = check (test_env ? h2Client : sClient)->/valuesetcomposeincludevaluesets.post([dbValueSetInsert]);
     }
 }
