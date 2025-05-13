@@ -67,7 +67,7 @@ function addExampleDataToTestDB() returns error? {
     string[] valueSetList = ["http://hl7.org/fhir/ValueSet/abstract-types", "http://hl7.org/fhir/ValueSet/account-status"];
 
     foreach string item in codeSystemList {
-        _ = check terminology:addCodeSystem(check terminology:readCodeSystemByUrl(item), terminology = terminology_source);   
+        _ = check terminology:addCodeSystem(check terminology:readCodeSystemByUrl(item), terminology = terminology_source);
     }
 
     foreach string item in valueSetList {
