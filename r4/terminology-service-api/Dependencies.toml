@@ -69,6 +69,9 @@ dependencies = [
 	{org = "ballerina", name = "os"},
 	{org = "ballerina", name = "time"}
 ]
+modules = [
+	{org = "ballerina", packageName = "file", moduleName = "file"}
+]
 
 [[package]]
 org = "ballerina"
@@ -367,6 +370,20 @@ dependencies = [
 ]
 
 [[package]]
+org = "ballerinacentral"
+name = "zip"
+version = "1.0.0"
+dependencies = [
+	{org = "ballerina", name = "file"},
+	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerinai", name = "observe"}
+]
+modules = [
+	{org = "ballerinacentral", packageName = "zip", moduleName = "zip"},
+	{org = "ballerinacentral", packageName = "zip", moduleName = "zip.net.lingala.zip4j"}
+]
+
+[[package]]
 org = "ballerinai"
 name = "observe"
 version = "0.0.0"
@@ -542,6 +559,7 @@ name = "terminology_service_api"
 version = "0.1.0"
 dependencies = [
 	{org = "ballerina", name = "data.jsondata"},
+	{org = "ballerina", name = "file"},
 	{org = "ballerina", name = "http"},
 	{org = "ballerina", name = "io"},
 	{org = "ballerina", name = "jballerina.java"},
@@ -551,6 +569,7 @@ dependencies = [
 	{org = "ballerina", name = "sql"},
 	{org = "ballerina", name = "test"},
 	{org = "ballerina", name = "time"},
+	{org = "ballerinacentral", name = "zip"},
 	{org = "ballerinai", name = "observe"},
 	{org = "ballerinax", name = "h2.driver"},
 	{org = "ballerinax", name = "health.fhir.r4"},

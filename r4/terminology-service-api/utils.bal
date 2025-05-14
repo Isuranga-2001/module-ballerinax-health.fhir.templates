@@ -1,9 +1,19 @@
+import terminology_service_api.store;
+
+import ballerina/data.jsondata;
+import ballerina/file;
+import ballerina/http;
+import ballerina/io;
+import ballerina/persist;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.parser;
-import ballerina/http;
-import terminology_service_api.store;
-import ballerina/persist;
+import ballerina/regex;
+
+import ballerinacentral/zip;
+
+// Module-level counter for unique file naming
+isolated int fileCount = 0;
 
 isolated function validationResultToParameters(international401:Parameters|r4:FHIRError concept) returns international401:Parameters|r4:FHIRError {
     international401:ParametersParameter[] params = [];
@@ -271,6 +281,21 @@ isolated function streamToStoreValueSetComposeInclude(stream<store:ValueSetCompo
     return dbConcepts;
 }
 
+isolated function streamToByteArray(stream<byte[], error?> byteArrayStream) returns byte[]|error {
+    return check jsondata:parseStream(byteArrayStream);
+}
+
+isolated function streamToBytes(stream<byte[], error?> byteStream) returns byte[]|error {
+    byte[] result = [];
+
+    check from byte[] chunk in byteStream
+        do {
+            result = [...result, ...chunk];
+        };
+
+    return result;
+}
+
 isolated function parseCodeSystemToR4CodeSystem(ParseCodeSystem customCodeSystem) returns r4:CodeSystem => {
     resourceType: customCodeSystem.resourceType,
     meta: customCodeSystem.meta,
@@ -338,3 +363,49 @@ isolated function parseValueSetToR4ValueSet(ParseValueSet customValueSet) return
     useContext: customValueSet.useContext,
     status: customValueSet.status ?: "unknown"
 };
+
+isolated function extractZipFile(string dirPath, string zipFilePath) returns string|error {
+    string extractedFolderPath = dirPath + "/extracted";
+    check zip:extract(zipFilePath, extractedFolderPath);
+
+    return extractedFolderPath;
+}
+
+isolated function removeDirectory(string dirPath) returns error? {
+    check file:remove(dirPath, file:RECURSIVE);
+}
+
+isolated function saveCompressedPayload(stream<byte[], error?> payloadStream, string dirPath) returns string|error {
+    // TODO: add the logic to create create directory in the init function
+    if check file:test(dirPath, file:EXISTS) {
+        check removeDirectory(dirPath);
+    }
+    check file:createDir(dirPath);
+
+    string zipFilePath = dirPath + "/file.zip";
+    check io:fileWriteBytes(zipFilePath, check streamToBytes(payloadStream));
+
+    return zipFilePath;
+}
+
+isolated function readFiles(string path) returns CodeSystemValueSetJson|error {
+    file:MetaData[] readDir = check file:readDir(path);
+
+    CodeSystemValueSetJson jsonArrays = {
+        codeSystems: [],
+        valueSets: []
+    };
+
+    foreach var item in readDir {
+        string[] nonEmptyParts = regex:split(item.absPath, "\\\\").filter(s => s != "");
+        string lastPart = nonEmptyParts[nonEmptyParts.length() - 1];
+
+        if lastPart.endsWith(".json") && lastPart.startsWith("CodeSystem-") {
+            jsonArrays.codeSystems.push(check io:fileReadJson(item.absPath));
+        } else if lastPart.endsWith(".json") && lastPart.startsWith("ValueSet-") {
+            jsonArrays.valueSets.push(check io:fileReadJson(item.absPath));
+        }
+    }
+
+    return jsonArrays;
+}
