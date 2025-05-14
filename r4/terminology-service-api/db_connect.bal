@@ -8,7 +8,11 @@ import ballerina/regex;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.terminology;
 
-final store:Client sClient = check new ();
+final store:Client sClient = check initializeClient();
+
+function initializeClient() returns store:Client|error {
+    return new ();
+}
 
 public isolated class TerminologySource {
     *terminology:Terminology;

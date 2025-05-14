@@ -1,5 +1,6 @@
 import terminology_service_api.store;
 
+import ballerina/data.jsondata;
 import ballerina/http;
 import ballerina/persist;
 import ballerinax/health.fhir.r4;
@@ -80,6 +81,21 @@ isolated function streamToStoreValueSetComposeInclude(stream<store:ValueSetCompo
     store:ValueSetComposeInclude[] dbConcepts = check from store:ValueSetComposeInclude concept in conceptStream
         select concept;
     return dbConcepts;
+}
+
+isolated function streamToByteArray(stream<byte[], error?> byteArrayStream) returns byte[]|error {
+    return check jsondata:parseStream(byteArrayStream);
+}
+
+isolated function streamToBytes(stream<byte[], error?> byteStream) returns byte[]|error {
+    byte[] result = [];
+
+    check from byte[] chunk in byteStream
+        do {
+            result = [...result, ...chunk];
+        };
+
+    return result;
 }
 
 isolated function parseCodeSystemToR4CodeSystem(ParseCodeSystem customCodeSystem) returns r4:CodeSystem => {

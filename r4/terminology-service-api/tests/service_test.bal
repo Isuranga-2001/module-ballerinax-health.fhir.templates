@@ -1,3 +1,5 @@
+import terminology_service_api.store;
+
 import ballerina/http;
 import ballerina/test;
 import ballerinax/health.fhir.r4;
@@ -7,6 +9,21 @@ import ballerinax/health.fhir.r4.terminology;
 http:Client baseClient = check new ("http://localhost:9089/fhir/r4");
 http:Client csClient = check new ("http://localhost:9089/fhir/r4/CodeSystem");
 http:Client vsClient = check new ("http://localhost:9089/fhir/r4/ValueSet");
+
+@test:BeforeSuite
+isolated function beforeSuite() returns error? {
+    check store:setupTestDB();
+}
+
+@test:AfterSuite
+function afterSuite() returns error? {
+    check store:cleanupTestDB();
+}
+
+@test:Mock {functionName: "initializeClient"}
+isolated function getMockClient() returns store:Client|error {
+    return test:mock(store:Client, check new store:H2Client("jdbc:h2:./test", "sa", ""));
+}
 
 @test:Config {
     groups: ["codesystem", "get_by_id_codesystem", "successful_scenario"]
@@ -84,7 +101,7 @@ public function lookupCodeSystem2() returns error? {
 }
 public function lookupCodeSystem3() returns error? {
     r4:Coding|r4:FHIRError coding = terminology:createCoding("http://hl7.org/fhir/account-status", "inactive");
-    international401:Parameters p = {'parameter: [{name: "coding", valueCoding: check coding}]} ;
+    international401:Parameters p = {'parameter: [{name: "coding", valueCoding: check coding}]};
     http:Response response = check csClient->post("/%24lookup", p);
     json actual = check response.getJsonPayload();
 
@@ -157,7 +174,7 @@ public function lookupCodeSystem8() returns error? {
     groups: ["codesystem", "lookup_codesystem", "failure_scenario"]
 }
 public function lookupCodeSystem9() returns error? {
-    international401:Parameters parameters = {'parameter: [{name: "sample"}]} ;
+    international401:Parameters parameters = {'parameter: [{name: "sample"}]};
     http:Response response = check csClient->post("/%24lookup", parameters);
     json actualJson = check response.getJsonPayload();
     r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
