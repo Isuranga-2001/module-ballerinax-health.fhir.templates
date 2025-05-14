@@ -5,7 +5,7 @@
 
 [ballerina]
 dependencies-toml-version = "2"
-distribution-version = "2201.12.3"
+distribution-version = "2201.12.2"
 
 [[package]]
 org = "ballerina"
@@ -403,7 +403,7 @@ dependencies = [
 [[package]]
 org = "ballerinax"
 name = "health.fhir.r4"
-version = "6.0.0"
+version = "6.0.2"
 dependencies = [
 	{org = "ballerina", name = "constraint"},
 	{org = "ballerina", name = "http"},
@@ -424,7 +424,7 @@ modules = [
 [[package]]
 org = "ballerinax"
 name = "health.fhir.r4.international401"
-version = "3.0.0"
+version = "3.0.2"
 dependencies = [
 	{org = "ballerina", name = "constraint"},
 	{org = "ballerina", name = "log"},
@@ -437,7 +437,7 @@ modules = [
 [[package]]
 org = "ballerinax"
 name = "health.fhir.r4.parser"
-version = "6.0.0"
+version = "6.0.2"
 dependencies = [
 	{org = "ballerina", name = "constraint"},
 	{org = "ballerina", name = "http"},
@@ -453,7 +453,7 @@ modules = [
 [[package]]
 org = "ballerinax"
 name = "health.fhir.r4.terminology"
-version = "5.0.2"
+version = "5.0.3"
 dependencies = [
 	{org = "ballerina", name = "http"},
 	{org = "ballerina", name = "io"},
@@ -472,7 +472,7 @@ modules = [
 [[package]]
 org = "ballerinax"
 name = "health.fhir.r4.validator"
-version = "5.0.0"
+version = "5.0.1"
 dependencies = [
 	{org = "ballerina", name = "constraint"},
 	{org = "ballerina", name = "http"},
