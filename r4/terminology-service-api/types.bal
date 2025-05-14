@@ -110,6 +110,8 @@ type XMLCodeSystem record {
     ValueString supplements?;
     ValueString implicitRules?;
     ValueString useContext?;
+    ValueContact[] contact?;
+    ValueHierarchyMeaning hierarchyMeaning?;
     r4:RESOURCE_NAME_CODESYSTEM resourceType = r4:RESOURCE_NAME_CODESYSTEM;
     r4:BaseCodeSystemMeta meta = {profile: [r4:PROFILE_BASE_CODESYSTEM]};
 };
@@ -144,4 +146,17 @@ type ValueConcept record {
     ValueString code;
     ValueString display?;
     ValueString definition?;
+};
+
+type ValueTelecom record {
+    ValueString system;
+    ValueString value;
+};
+
+type ValueContact record {
+    ValueTelecom[] telecom;
+};
+
+type ValueHierarchyMeaning record {
+    string value;
 };

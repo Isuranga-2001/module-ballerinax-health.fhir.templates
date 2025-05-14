@@ -164,9 +164,7 @@ isolated function xmlCodeSystemToR4CodeSystem(XMLCodeSystem xmlCodeSystem) retur
     language: xmlCodeSystem.language?.value,
     id: xmlCodeSystem.id?.value,
     copyright: xmlCodeSystem.copyright?.value,
-    text: mapText(xmlCodeSystem.text),
     caseSensitive: xmlCodeSystem.caseSensitive?.value,
-    identifier: mapIdentifiers(xmlCodeSystem.identifierList),
     publisher: xmlCodeSystem.publisher?.value,
     implicitRules: xmlCodeSystem.implicitRules?.value,
     name: xmlCodeSystem.name?.value,
@@ -176,15 +174,19 @@ isolated function xmlCodeSystemToR4CodeSystem(XMLCodeSystem xmlCodeSystem) retur
     'version: xmlCodeSystem.version?.value,
     count: xmlCodeSystem.count?.value,
     versionNeeded: xmlCodeSystem.versionNeeded?.value,
+    text: mapText(xmlCodeSystem.text),
+    identifier: mapIdentifiers(xmlCodeSystem.identifierList),
     filter: mapFilters(xmlCodeSystem.filters),
     property: mapProperties(xmlCodeSystem.properties),
+    contact: mapContacts(xmlCodeSystem.contact),
+    hierarchyMeaning: mapHierarchyMeaning(xmlCodeSystem.hierarchyMeaning),
     concept: mapConcepts(xmlCodeSystem.concept)
 };
 
 // Helper function to map filters
-isolated function mapFilters(ValueFilter[]? filters) returns r4:CodeSystemFilter[] {
+isolated function mapFilters(ValueFilter[]? filters) returns r4:CodeSystemFilter[]? {
     if filters is () {
-        return [];
+        return ();
     }
     r4:CodeSystemFilter[] r4Filters = [];
     foreach var filter in filters {
@@ -195,13 +197,17 @@ isolated function mapFilters(ValueFilter[]? filters) returns r4:CodeSystemFilter
             value: filter.value?.value
         });
     }
+
+    if r4Filters.length() == 0 {
+        return ();
+    }
     return r4Filters;
 }
 
 // Helper function to map properties
-isolated function mapProperties(ValueProperty[]? properties) returns r4:CodeSystemProperty[] {
+isolated function mapProperties(ValueProperty[]? properties) returns r4:CodeSystemProperty[]? {
     if properties is () {
-        return [];
+        return ();
     }
     r4:CodeSystemProperty[] r4Properties = [];
     foreach var property in properties {
@@ -213,13 +219,16 @@ isolated function mapProperties(ValueProperty[]? properties) returns r4:CodeSyst
         });
     }
 
+    if r4Properties.length() == 0 {
+        return ();
+    }
     return r4Properties;
 }
 
 // Helper function to map Concept[]? to r4:CodeSystemConcept[]
-isolated function mapConcepts(ValueConcept[]? concepts) returns r4:CodeSystemConcept[] {
+isolated function mapConcepts(ValueConcept[]? concepts) returns r4:CodeSystemConcept[]? {
     if concepts is () {
-        return [];
+        return ();
     }
     r4:CodeSystemConcept[] r4Concepts = [];
     foreach var concept in concepts {
@@ -232,17 +241,25 @@ isolated function mapConcepts(ValueConcept[]? concepts) returns r4:CodeSystemCon
         }
         r4Concepts.push(r4Concept);
     }
+
+    if r4Concepts.length() == 0 {
+        return ();
+    }
     return r4Concepts;
 }
 
 // Helper function to map identifiers
-isolated function mapIdentifiers(ValueString[]? identifiers) returns r4:Identifier[] {
+isolated function mapIdentifiers(ValueString[]? identifiers) returns r4:Identifier[]? {
     if identifiers is () {
-        return [];
+        return ();
     }
     r4:Identifier[] r4Identifiers = [];
     foreach var identifier in identifiers {
         r4Identifiers.push({value: identifier.value});
+    }
+
+    if r4Identifiers.length() == 0 {
+        return ();
     }
     return r4Identifiers;
 }
@@ -253,4 +270,37 @@ isolated function mapText(ValueString? text) returns r4:Narrative? {
         return ();
     }
     return {div: text.value, status: "generated"};
+}
+
+// Helper function to map ValueContact[]? to r4:ContactDetail[]?
+isolated function mapContacts(ValueContact[]? contacts) returns r4:ContactDetail[]? {
+    if contacts is () {
+        return ();
+    }
+    r4:ContactDetail[] r4Contacts = [];
+    foreach var contact in contacts {
+        r4:ContactPoint[] r4Telecoms = [];
+        foreach var telecom in contact.telecom {
+            r4Telecoms.push({
+                system: <r4:ContactPointSystem>telecom.system.value,
+                value: telecom.value.value
+            });
+        }
+        r4Contacts.push({
+            telecom: r4Telecoms
+        });
+    }
+    if r4Contacts.length() == 0 {
+        return ();
+    }
+    return r4Contacts;
+}
+
+// Helper function to map hierarchyMeaning
+isolated function mapHierarchyMeaning(ValueHierarchyMeaning? hierarchyMeaning) returns r4:CodeSystemHierarchyMeaning? {
+    if hierarchyMeaning is () {
+        return ();
+    }
+    // Map string value to r4:CodeSystemHierarchyMeaning enum
+    return <r4:CodeSystemHierarchyMeaning>hierarchyMeaning.value;
 }
