@@ -182,4 +182,10 @@ service http:InterceptableService / on interceptorListener {
         r4:Bundle result = check batchValidateValueSets(request);
         return result.toJson();
     }
+
+    isolated resource function post fhir/r4/create(http:RequestContext ctx, http:Request request) returns json|xml|r4:FHIRError {
+        log:printDebug(string `FHIR Terminology request is received. Interaction: Create`);
+
+        return create(request);
+    }
 }

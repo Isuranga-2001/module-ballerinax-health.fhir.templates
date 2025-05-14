@@ -1,5 +1,10 @@
 import ballerinax/health.fhir.r4;
 
+public type CodeSystemValueSetJson record {|
+    json[] codeSystems;
+    json[] valueSets;
+|};
+
 public type ParseCodeSystem record {|
     *r4:DomainResource;
 

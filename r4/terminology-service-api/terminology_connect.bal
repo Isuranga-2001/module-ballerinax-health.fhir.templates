@@ -6,6 +6,7 @@ import ballerina/time;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
+// import ballerina/io;
 
 final TerminologySource db_terminology_source = new ();
 
@@ -645,6 +646,41 @@ public isolated function addValueSetFromStream(http:Request valueSetPayload) ret
     } on fail var e {
         return r4:createFHIRError(
                 "Invalid request payload",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                cause = e,
+                httpStatusCode = http:STATUS_BAD_REQUEST);
+    }
+}
+
+public isolated function create(http:Request payload) returns r4:FHIRError? {
+    do {
+        string path = payload.getQueryParamValue("path") ?: "";
+        string dirPath;
+
+         lock {
+            fileCount = fileCount + 1;
+            dirPath = "create/payload_" + fileCount.toString();
+        }
+
+        stream<byte[], error?> payloadStream = check payload.getByteStream();
+        string zipFilePath = check saveCompressedPayload(payloadStream, dirPath);
+        string extractedFolderPath = check extractZipFile(dirPath, zipFilePath);
+
+        CodeSystemValueSetJson jsonArrays = check readFiles(extractedFolderPath + (path != "" ? "/" + path : ""));
+
+        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
+            _ = terminology:addCodeSystemsAsJson(jsonArrays.codeSystems, terminology = terminology_source);
+            _ = terminology:addValueSetsAsJson(jsonArrays.valueSets, terminology = terminology_source);
+        } else {
+            _ = terminology:addCodeSystemsAsJson(jsonArrays.codeSystems);
+            _ = terminology:addValueSetsAsJson(jsonArrays.valueSets);
+        }
+
+        check removeDirectory(dirPath);
+    } on fail var e {
+        return r4:createFHIRError(
+                "Invalid request payload, " + e.message(),
                 r4:ERROR,
                 r4:INVALID_REQUIRED,
                 cause = e,

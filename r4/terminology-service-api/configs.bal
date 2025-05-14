@@ -8,3 +8,6 @@ public final string TABLE_NAME_CODESYSTEM = "code_system";
 public final string TABLE_NAME_CONCEPT = "concept";
 public final string TABLE_NAME_VALUESET = "value_set";
 public final string TYPE_HEADER = "x-terminology-type";
+
+public final string EXTRACTED_FOLDER_PATH = "./create/extracted";
+public final string ZIP_FOLDER_PATH = "./create/zip";
