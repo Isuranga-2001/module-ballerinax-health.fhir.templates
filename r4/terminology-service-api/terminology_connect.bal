@@ -1,4 +1,5 @@
 import ballerina/data.jsondata;
+import ballerina/data.xmldata;
 import ballerina/http;
 import ballerina/regex;
 import ballerina/time;
@@ -568,20 +569,44 @@ isolated function getSystemAndCode(string input) returns map<string> {
     return {"system": system, "code": code};
 }
 
-public isolated function addCodeSystemFromStream(http:Request codeSystemPayload) returns r4:FHIRError? {
+public isolated function addCodeSystemFromStream(http:Request req) returns r4:FHIRError? {
     do {
-        stream<byte[], error?> payloadStream = check codeSystemPayload.getByteStream();
+        stream<byte[], error?> payloadStream = check req.getByteStream();
 
-        ParseCodeSystem parsedCodeSystem = check jsondata:parseStream(s = payloadStream);
-        if parsedCodeSystem.content is () || parsedCodeSystem.status is () {
+        string contentType = req.getContentType();
+        r4:CodeSystem codeSystem;
+
+        if contentType == "application/json" {
+            ParseCodeSystem parsedCodeSystem = check jsondata:parseStream(s = payloadStream);
+
+            if parsedCodeSystem.content is () || parsedCodeSystem.status is () {
+                return r4:createFHIRError(
+                        "Invalid request payload, required fields are missing (content, status)",
+                        r4:ERROR,
+                        r4:INVALID_REQUIRED,
+                        httpStatusCode = http:STATUS_BAD_REQUEST);
+            }
+
+            codeSystem = parseCodeSystemToR4CodeSystem(parsedCodeSystem);
+        } else if contentType == "application/xml" {
+            XMLCodeSystem parsedCodeSystem = check xmldata:parseStream(s = payloadStream);
+
+            if parsedCodeSystem.content is () || parsedCodeSystem.status is () {
+                return r4:createFHIRError(
+                        "Invalid request payload, required fields are missing (content, status)",
+                        r4:ERROR,
+                        r4:INVALID_REQUIRED,
+                        httpStatusCode = http:STATUS_BAD_REQUEST);
+            }
+
+            codeSystem = xmlCodeSystemToR4CodeSystem(parsedCodeSystem);
+        } else {
             return r4:createFHIRError(
-                    "Invalid request payload",
+                    "Invalid request payload, content type is not supported",
                     r4:ERROR,
                     r4:INVALID_REQUIRED,
                     httpStatusCode = http:STATUS_BAD_REQUEST);
         }
-
-        r4:CodeSystem codeSystem = parseCodeSystemToR4CodeSystem(parsedCodeSystem);
 
         if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
             return terminology:addCodeSystem(codeSystem, terminology = terminology_source);
@@ -591,7 +616,7 @@ public isolated function addCodeSystemFromStream(http:Request codeSystemPayload)
 
     } on fail var e {
         return r4:createFHIRError(
-                "Invalid request payload",
+                "Invalid request payload, " + e.message(),
                 r4:ERROR,
                 r4:INVALID_REQUIRED,
                 cause = e,

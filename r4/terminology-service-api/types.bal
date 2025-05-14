@@ -84,3 +84,84 @@ public type ParseValueSet record {|
     r4:ValueSetStatus status?;
     never...;
 |};
+
+type XMLCodeSystem record {
+    ValueString id?;
+    ValueString url?;
+    ValueString name?;
+    ValueString title?;
+    ValueString status?;
+    ValueBoolean experimental?;
+    ValueString publisher?;
+    ValueString copyright?;
+    ValueBoolean caseSensitive?;
+    ValueString valueSet?;
+    ValueBoolean compositional?;
+    ValueBoolean versionNeeded?;
+    ValueString content?;
+    ValueString description?;
+    ValueFilter[] filters?;
+    ValueProperty[] properties?;
+    ValueString date?;
+    ValueString purpose?;
+    ValueString language?;
+    ValueConcept[] concept?;
+    ValueString[] contactDetail?;
+    ValueString[] propertyDetail?;
+    ValueString[] identifierList?;
+    ValueString text?;
+    ValueInt count?;
+    ValueString version?;
+    ValueString supplements?;
+    ValueString implicitRules?;
+    ValueString useContext?;
+    ValueContact[] contact?;
+    ValueHierarchyMeaning hierarchyMeaning?;
+    r4:RESOURCE_NAME_CODESYSTEM resourceType = r4:RESOURCE_NAME_CODESYSTEM;
+    r4:BaseCodeSystemMeta meta = {profile: [r4:PROFILE_BASE_CODESYSTEM]};
+};
+
+type ValueString record {
+    string value;
+};
+
+type ValueBoolean record {
+    boolean value;
+};
+
+type ValueInt record {
+    int value;
+};
+
+type ValueFilter record {
+    ValueString code;
+    ValueString description;
+    ValueString operator;
+    ValueString value;
+};
+
+type ValueProperty record {
+    ValueString code;
+    ValueString uri;
+    ValueString description;
+    ValueString 'type;
+};
+
+type ValueConcept record {
+    ValueString code;
+    ValueString display?;
+    ValueString definition?;
+};
+
+type ValueTelecom record {
+    ValueString system;
+    ValueString value;
+};
+
+type ValueContact record {
+    ValueTelecom[] telecom;
+};
+
+type ValueHierarchyMeaning record {
+    string value;
+};
