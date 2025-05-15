@@ -3,12 +3,17 @@ import terminology_service_api.store;
 import ballerina/http;
 import ballerina/log;
 import ballerina/persist;
-import ballerina/sql;
 import ballerina/regex;
+import ballerina/sql;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.terminology;
+import ballerina/io;
 
-final store:Client sClient = check new ();
+final store:Client sClient = check initializeClient();
+
+function initializeClient() returns store:Client|error {
+    return new ();
+}
 
 public isolated class TerminologySource {
     *terminology:Terminology;
@@ -26,6 +31,8 @@ public isolated class TerminologySource {
             publisher: codeSystem.publisher ?: "",
             codeSystem: check codeSystemToByte(codeSystem)
         };
+
+        io:println("CodeSystem: ", codeSystem.id, "!");
 
         int[]|persist:Error response = sClient->/codesystems.post([dbCodeSystemInsert]);
         if (response is persist:Error) {
@@ -110,7 +117,7 @@ public isolated class TerminologySource {
         if valuesetConceptDetails !is r4:FHIRError {
             return valuesetConceptDetails;
         }
-        
+
         // find the concept in the codesystem table
         terminology:CodeConceptDetails|r4:FHIRError conceptDetails = findConceptInCodeSystem(system, code, version);
         if conceptDetails !is r4:FHIRError {
@@ -328,15 +335,15 @@ isolated function findConceptInValueSet(r4:uri system, r4:code code, string? ver
                 cause = error("No matching CodeSystem found"),
                 httpStatusCode = http:STATUS_NOT_FOUND);
     }
-    
+
     // checks for valueset concepts
     sql:ParameterizedQuery sqlQuery = `SELECT c.*
         FROM concepts c
-            JOIN valueset_compose_include_concepts vcic 
+            JOIN valueset_compose_include_concepts vcic
                 ON c.conceptId = vcic.conceptConceptId
-            JOIN valueset_compose_includes vci 
+            JOIN valueset_compose_includes vci
                 ON vcic.valuesetcomposeValueSetComposeIncludeId = vci.valueSetComposeIncludeId
-            JOIN valuesets vs 
+            JOIN valuesets vs
                 ON vci.valuesetValueSetId = vs.valueSetId
         WHERE vs.valueSetId = ${valueset.valueSetId} AND c.code = ${code};`;
 
@@ -355,11 +362,11 @@ isolated function findConceptInValueSet(r4:uri system, r4:code code, string? ver
     // checks for code systems
     sqlQuery = `SELECT c.*
         FROM concepts c
-            JOIN codesystems cs 
+            JOIN codesystems cs
                 ON c.codesystemCodeSystemId = cs.codeSystemId
-            JOIN valueset_compose_includes vci 
+            JOIN valueset_compose_includes vci
                 ON cs.codeSystemId = vci.codeSystemId
-            JOIN valuesets vs 
+            JOIN valuesets vs
                 ON vci.valuesetValueSetId = vs.valueSetId
         WHERE vs.valueSetId = ${valueset.valueSetId} AND c.code = ${code}`;
 
@@ -378,11 +385,11 @@ isolated function findConceptInValueSet(r4:uri system, r4:code code, string? ver
     // checks for nested valueset references
     sqlQuery = `SELECT vs_included.*
         FROM valuesets vs_parent
-            JOIN valueset_compose_includes vci 
+            JOIN valueset_compose_includes vci
                 ON vs_parent.valueSetId = vci.valuesetValueSetId
-            JOIN valueset_compose_include_value_sets vcivs 
+            JOIN valueset_compose_include_value_sets vcivs
                 ON vci.valueSetComposeIncludeId = vcivs.valuesetcomposeValueSetComposeIncludeId
-            JOIN valuesets vs_included 
+            JOIN valuesets vs_included
                 ON vcivs.valuesetValueSetId = vs_included.valueSetId
         WHERE vs_parent.valueSetId = ${valueset.valueSetId}`;
 
@@ -400,7 +407,7 @@ isolated function findConceptInValueSet(r4:uri system, r4:code code, string? ver
 
     if nestedValueSets.length() > 0 {
         foreach store:ValueSet nestedValueSet in nestedValueSets {
-            var result =  findConceptInValueSet(nestedValueSet.url, code, nestedValueSet.version);
+            var result = findConceptInValueSet(nestedValueSet.url, code, nestedValueSet.version);
             if result !is r4:FHIRError {
                 return result;
             }
@@ -429,10 +436,15 @@ isolated function findConceptInCodeSystem(r4:uri system, r4:code code, string? v
                 httpStatusCode = http:STATUS_NOT_FOUND);
     }
 
-    var dbConcept = getStoreConceptByCode(codeSystem.codeSystemId, code); 
+    var dbConcept = getStoreConceptByCode(codeSystem.codeSystemId, code);
     if dbConcept is error {
-        return dbConcept;
-    }       
+        return r4:createFHIRError(
+                "Error while searching for Concept, " + dbConcept.message(),
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                cause = dbConcept,
+                httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+    }
 
     r4:CodeSystemConcept|error codeSystemConcept = byteToConcept(dbConcept.concept);
 
@@ -450,8 +462,6 @@ isolated function findConceptInCodeSystem(r4:uri system, r4:code code, string? v
         concept: codeSystemConcept
     };
 }
-
-// functions
 
 isolated function getAllCodeSystems() returns r4:CodeSystem[]|error {
     stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems();
@@ -473,12 +483,18 @@ isolated function getAllCodeSystems() returns r4:CodeSystem[]|error {
 }
 
 isolated function getCodeSystemByID(string id, string? version = ()) returns r4:CodeSystem|error {
-    sql:ParameterizedQuery sqlQueryWhereClause = version is ()
-        ? `id = ${id} ORDER BY version DESC LIMIT 1`
-        : `id = ${id} AND version = ${version}`;
-
-    stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause = sqlQueryWhereClause);
-    store:CodeSystem[] codeSystems = check streamToStoreCodeSystem(codeSystemStream);
+    store:CodeSystem[] codeSystems;
+    if version !is () {
+        codeSystems = check from store:CodeSystem codesystem in sClient->/codesystems(store:CodeSystem)
+            where codesystem.id == id && codesystem.'version == version
+            select codesystem;
+    } else {
+        codeSystems = check from store:CodeSystem codesystem in sClient->/codesystems(store:CodeSystem)
+            where codesystem.id == id
+            order by codesystem.version descending
+            limit 1
+            select codesystem;
+    }
 
     if codeSystems.length() == 0 {
         return r4:createFHIRError(
@@ -499,12 +515,18 @@ isolated function getCodeSystemByURL(string system, string? version = ()) return
 }
 
 isolated function getStoreCodeSystemByURL(string system, string? version = ()) returns store:CodeSystem|error {
-    sql:ParameterizedQuery sqlQueryWhereClause = version is ()
-        ? `url = ${system} ORDER BY version DESC LIMIT 1`
-        : `url = ${system} AND version = ${version}`;
-
-    stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause = sqlQueryWhereClause);
-    store:CodeSystem[] codeSystems = check streamToStoreCodeSystem(codeSystemStream);
+    store:CodeSystem[] codeSystems;
+    if version !is () {
+        codeSystems = check from store:CodeSystem codesystem in sClient->/codesystems(store:CodeSystem)
+            where codesystem.url == system && codesystem.version == version
+            select codesystem;
+    } else {
+        codeSystems = check from store:CodeSystem codesystem in sClient->/codesystems(store:CodeSystem)
+            where codesystem.url == system
+            order by codesystem.version descending
+            limit 1
+            select codesystem;
+    }
 
     if codeSystems.length() == 0 {
         return r4:createFHIRError(
@@ -518,12 +540,18 @@ isolated function getStoreCodeSystemByURL(string system, string? version = ()) r
 }
 
 isolated function getValueSetByID(string id, string? version = ()) returns r4:ValueSet|error {
-    sql:ParameterizedQuery sqlQueryWhereClause = version is ()
-        ? `id = ${id} ORDER BY version DESC LIMIT 1`
-        : `id = ${id} AND version = ${version}`;
-
-    stream<store:ValueSet, persist:Error?> valueSetStream = sClient->/valuesets(store:ValueSet, whereClause = sqlQueryWhereClause);
-    store:ValueSet[] valueSets = check streamToStoreValueSet(valueSetStream);
+    store:ValueSet[] valueSets;
+    if version !is () {
+        valueSets = check from store:ValueSet valueSet in sClient->/valuesets(store:ValueSet)
+            where valueSet.id == id && valueSet.version == version
+            select valueSet;
+    } else {
+        valueSets = check from store:ValueSet valueSet in sClient->/valuesets(store:ValueSet)
+            where valueSet.id == id
+            order by valueSet.version descending
+            limit 1
+            select valueSet;
+    }
 
     if valueSets.length() == 0 {
         return r4:createFHIRError(
@@ -545,12 +573,18 @@ isolated function getValueSetByURL(string system, string? version = ()) returns 
 }
 
 isolated function getStoreValueSetByURL(string system, string? version = ()) returns store:ValueSet|error {
-    sql:ParameterizedQuery sqlQueryWhereClause = version is ()
-        ? `url = ${system} ORDER BY version DESC LIMIT 1`
-        : `url = ${system} AND version = ${version}`;
-
-    stream<store:ValueSet, persist:Error?> valueSetStream = sClient->/valuesets(store:ValueSet, whereClause = sqlQueryWhereClause);
-    store:ValueSet[] valueSets = check streamToStoreValueSet(valueSetStream);
+    store:ValueSet[] valueSets;
+    if version !is () {
+        valueSets = check from store:ValueSet valueSet in sClient->/valuesets(store:ValueSet)
+            where valueSet.url == system && valueSet.version == version
+            select valueSet;
+    } else {
+        valueSets = check from store:ValueSet valueSet in sClient->/valuesets(store:ValueSet)
+            where valueSet.url == system
+            order by valueSet.version descending
+            limit 1
+            select valueSet;
+    }
 
     if valueSets.length() == 0 {
         return r4:createFHIRError(
@@ -563,8 +597,22 @@ isolated function getStoreValueSetByURL(string system, string? version = ()) ret
     return valueSets[0];
 }
 
-isolated function getStoreConceptByCode(int codeSystemId, r4:code code) returns store:Concept|r4:FHIRError {
+isolated function getStoreConceptByCode(int codeSystemId, r4:code code) returns store:Concept|error {
     return getStoreConcept(`SELECT * FROM concepts WHERE code = ${code} AND codesystemCodeSystemId = ${codeSystemId}`);
+    // store:Concept[] concepts = check from store:Concept concept in sClient->/concepts(store:Concept)
+    //     where concept.code == code && concept.codesystemCodeSystemId == codeSystemId
+    //     select concept;
+
+    // if concepts.length() > 0 {
+    //     return concepts[0];
+    // } else {
+    //     return r4:createFHIRError(
+    //             "Concept not found",
+    //             r4:ERROR,
+    //             r4:INVALID_REQUIRED,
+    //             cause = error("No matching Concept found"),
+    //             httpStatusCode = http:STATUS_NOT_FOUND);
+    // }
 }
 
 isolated function getStoreConcept(sql:ParameterizedQuery sqlQuery) returns store:Concept|r4:FHIRError {
@@ -715,7 +763,7 @@ isolated function saveNestedValueSetsInValueSetComposeInclude(r4:canonical[] val
     foreach r4:canonical valueSet in valueSets {
         string[] split = regex:split(valueSet, string `\|`);
         var dbValueSet = getStoreValueSetByURL(split[0], split.length() > 1 ? split[1] : ());
-        
+
         if dbValueSet is error {
             return r4:createFHIRError(
                     "ValueSet not found",

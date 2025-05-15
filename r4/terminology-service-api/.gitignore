@@ -1,4 +1,5 @@
 target
 generated
 Config.toml
-test.mv.db
+*.db
+create
