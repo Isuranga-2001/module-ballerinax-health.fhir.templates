@@ -693,7 +693,7 @@ public function testAddValidCodeSystemJson() returns error? {
 }
 
 @test:Config {
-    groups: ["codesystem", "add_codesystem_xml", "successful_scenario"]
+    groups: ["codesystem", "add_codesystem", "successful_scenario"]
 }
 public function testAddValidCodeSystemXml() returns error? {
     xml requestPayload = returnCodeSystemDataXml("add-valid-codesystem");
@@ -836,14 +836,40 @@ public function testAddEmptyValueSetPayload() returns error? {
 }
 
 @test:Config {
-    groups: ["create", "successful_scenario"]
+    groups: ["upload", "successful_scenario"]
 }
-public function testCreate() returns error? {
+public function testUpload() returns error? {
     byte[] zipBytes = check readZipFileAsBytes("test.zip");
 
     http:Request req = new;
     req.setPayload(zipBytes, contentType = "application/zip");
 
-    http:Response response = check baseClient->post("/create?path=hl7.terminology.r4/package", req);
+    http:Response response = check baseClient->post("/upload?path=hl7.terminology.r4/package", req);
     test:assertEquals(response.statusCode, 202);
+}
+
+@test:Config {
+    groups: ["upload", "codesystem", "add_codesystem", "successful_scenario"]
+}
+public function testUploadCodeSystem() returns error? {
+    byte[] zipBytes = check readZipFileAsBytes("codesystem.zip");
+
+    http:Request req = new;
+    req.setPayload(zipBytes, contentType = "application/zip");
+
+    http:Response response = check csClient->post("/", req);
+    test:assertEquals(response.statusCode, 201);
+}
+
+@test:Config {
+    groups: ["upload", "valueset", "add_valueset_zip", "successful_scenario"]
+}
+public function testUploadValueSet() returns error? {
+    byte[] zipBytes = check readZipFileAsBytes("valueset.zip");
+
+    http:Request req = new;
+    req.setPayload(zipBytes, contentType = "application/zip");
+
+    http:Response response = check vsClient->post("/", req);
+    test:assertEquals(response.statusCode, 201);
 }

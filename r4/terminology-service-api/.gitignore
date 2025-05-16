@@ -5,3 +5,5 @@ temp_files
 *.db
 
 !test.zip
+!codesystem.zip
+!valueset.zip

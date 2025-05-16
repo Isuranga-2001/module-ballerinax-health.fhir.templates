@@ -74,7 +74,7 @@ function readJsonData(string fileName) returns json {
 }
 
 public function readZipFileAsBytes(string fileName) returns byte[]|error {
-    string filePath = string `tests/resources/${fileName}`;
+    string filePath = string `tests/resources/zip/${fileName}`;
     return io:fileReadBytes(filePath);
 }
 

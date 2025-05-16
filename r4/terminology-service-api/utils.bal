@@ -215,7 +215,7 @@ isolated function saveCompressedPayload(stream<byte[], io:Error?> payloadStream,
     check io:fileWriteBlocksFromStream(dirPath + ZIP_FILE_NAME, payloadStream);
 }
 
-isolated function readFiles(string path) returns CodeSystemValueSetJson|error {
+isolated function readFilesForUpload(string path) returns CodeSystemValueSetJson|error {
     file:MetaData[] readDir = check file:readDir(path);
 
     CodeSystemValueSetJson jsonArrays = {
@@ -237,6 +237,23 @@ isolated function readFiles(string path) returns CodeSystemValueSetJson|error {
     return jsonArrays;
 }
 
+isolated function readFilesAsJsons(string path) returns json[]|error {
+    file:MetaData[] readDir = check file:readDir(path);
+    
+    json[] jsonList = [];
+
+    foreach var item in readDir {
+        string[] nonEmptyParts = regex:split(item.absPath, "\\\\").filter(s => s != "");
+        string lastPart = nonEmptyParts[nonEmptyParts.length() - 1];
+
+        if lastPart.endsWith(".json") {
+            jsonList.push(check io:fileReadJson(item.absPath));
+        }
+    }
+
+    return jsonList;
+}
+
 function init() returns error? {
-    check removeDirectory(UPLOAD_DATA_DIRECTORY_NAME);
+    check removeDirectory(TEMPORARY_FILES_DIRECTORY_NAME);
 }

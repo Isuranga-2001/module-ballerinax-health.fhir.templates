@@ -76,7 +76,7 @@ service http:InterceptableService / on interceptorListener {
     isolated resource function post fhir/r4/ValueSet(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug(string `FHIR Terminology request is received. Interaction: Add new ValueSet`);
 
-        r4:FHIRError? response = check addValueSetFromStream(request);
+        r4:FHIRError? response = check addValueSet(request);
 
         if (response is r4:FHIRError) {
             http:Response errorResponse = new;
@@ -151,7 +151,7 @@ service http:InterceptableService / on interceptorListener {
     isolated resource function post fhir/r4/CodeSystem(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError|error {
         log:printDebug("FHIR Terminology request is received. Interaction: Add new CodeSystem");
 
-        r4:FHIRError? response = check addCodeSystemFromStream(request);
+        r4:FHIRError? response = check addCodeSystem(request);
 
         if response is r4:FHIRError {
             http:Response errorResponse = new;
@@ -175,9 +175,9 @@ service http:InterceptableService / on interceptorListener {
         return result.toJson();
     }
 
-    isolated resource function post fhir/r4/create(http:RequestContext ctx, http:Request request) returns json|xml|r4:FHIRError {
+    isolated resource function post fhir/r4/upload(http:RequestContext ctx, http:Request request) returns json|xml|r4:FHIRError {
         log:printDebug(string `FHIR Terminology request is received. Interaction: Create`);
 
-        return create(request);
+        return upload(request);
     }
 }
