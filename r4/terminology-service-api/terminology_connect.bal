@@ -6,7 +6,6 @@ import ballerina/time;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
-import ballerina/lang.runtime;
 
 final TerminologySource db_terminology_source = new ();
 
@@ -664,7 +663,6 @@ public isolated function create(http:Request payload) returns r4:FHIRError? {
         }
 
         string zipFilePath = check saveCompressedPayload(check payload.getByteStream(), dirPath);
-        runtime:sleep(1);
         string extractedFolderPath = check extractZipFile(dirPath, zipFilePath);
 
         CodeSystemValueSetJson jsonArrays = check readFiles(extractedFolderPath + (path != "" ? "/" + path : ""));
@@ -676,8 +674,6 @@ public isolated function create(http:Request payload) returns r4:FHIRError? {
             _ = terminology:addCodeSystemsAsJson(jsonArrays.codeSystems);
             _ = terminology:addValueSetsAsJson(jsonArrays.valueSets);
         }
-
-        check removeDirectory(dirPath);
     } on fail var e {
         return r4:createFHIRError(
                 "Invalid request payload, " + e.message(),
