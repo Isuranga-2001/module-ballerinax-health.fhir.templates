@@ -528,29 +528,6 @@ modules = [
 
 [[package]]
 org = "ballerinax"
-name = "mysql"
-version = "1.15.0"
-dependencies = [
-	{org = "ballerina", name = "crypto"},
-	{org = "ballerina", name = "io"},
-	{org = "ballerina", name = "jballerina.java"},
-	{org = "ballerina", name = "sql"},
-	{org = "ballerina", name = "time"}
-]
-modules = [
-	{org = "ballerinax", packageName = "mysql", moduleName = "mysql"}
-]
-
-[[package]]
-org = "ballerinax"
-name = "mysql.driver"
-version = "1.8.0"
-modules = [
-	{org = "ballerinax", packageName = "mysql.driver", moduleName = "mysql.driver"}
-]
-
-[[package]]
-org = "ballerinax"
 name = "persist.sql"
 version = "1.6.0"
 dependencies = [
@@ -562,6 +539,29 @@ dependencies = [
 ]
 modules = [
 	{org = "ballerinax", packageName = "persist.sql", moduleName = "persist.sql"}
+]
+
+[[package]]
+org = "ballerinax"
+name = "postgresql"
+version = "1.15.0"
+dependencies = [
+	{org = "ballerina", name = "crypto"},
+	{org = "ballerina", name = "io"},
+	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerina", name = "sql"},
+	{org = "ballerina", name = "time"}
+]
+modules = [
+	{org = "ballerinax", packageName = "postgresql", moduleName = "postgresql"}
+]
+
+[[package]]
+org = "ballerinax"
+name = "postgresql.driver"
+version = "1.6.1"
+modules = [
+	{org = "ballerinax", packageName = "postgresql.driver", moduleName = "postgresql.driver"}
 ]
 
 [[package]]
@@ -589,18 +589,12 @@ dependencies = [
 	{org = "ballerinax", name = "health.fhir.r4.parser"},
 	{org = "ballerinax", name = "health.fhir.r4.terminology"},
 	{org = "ballerinax", name = "java.jdbc"},
-	{org = "ballerinax", name = "mysql"},
-	{org = "ballerinax", name = "mysql.driver"},
-	{org = "ballerinax", name = "persist.sql"}
+	{org = "ballerinax", name = "persist.sql"},
+	{org = "ballerinax", name = "postgresql"},
+	{org = "ballerinax", name = "postgresql.driver"}
 ]
 modules = [
 	{org = "wso2", packageName = "terminology_service_api", moduleName = "terminology_service_api"},
 	{org = "wso2", packageName = "terminology_service_api", moduleName = "terminology_service_api.store"}
 ]
-
-[[tool]]
-id = "persist"
-org = "ballerina"
-name = "tool_persist"
-version = "0.0.0"
 

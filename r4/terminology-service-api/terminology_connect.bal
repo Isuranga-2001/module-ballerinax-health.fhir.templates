@@ -581,7 +581,7 @@ public isolated function addCodeSystemFromStream(http:Request req) returns r4:FH
 
             if parsedCodeSystem.content is () || parsedCodeSystem.status is () {
                 return r4:createFHIRError(
-                        "Invalid request payload, required fields are missing (content, status)",
+                        "Invalid request payload",
                         r4:ERROR,
                         r4:INVALID_REQUIRED,
                         httpStatusCode = http:STATUS_BAD_REQUEST);
@@ -593,7 +593,7 @@ public isolated function addCodeSystemFromStream(http:Request req) returns r4:FH
 
             if parsedCodeSystem.content is () || parsedCodeSystem.status is () {
                 return r4:createFHIRError(
-                        "Invalid request payload, required fields are missing (content, status)",
+                        "Invalid request payload",
                         r4:ERROR,
                         r4:INVALID_REQUIRED,
                         httpStatusCode = http:STATUS_BAD_REQUEST);

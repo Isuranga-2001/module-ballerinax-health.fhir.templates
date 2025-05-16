@@ -11,14 +11,6 @@ service http:InterceptableService / on interceptorListener {
         return new FHIRResponseErrorInterceptor();
     }
 
-    isolated resource function head fhir/r4(http:RequestContext ctx, http:Request request) returns http:Response {
-        log:printDebug("Health check request received.");
-
-        http:Response response = new;
-        response.statusCode = http:STATUS_OK;
-        return response;
-    }
-
     isolated resource function get fhir/r4/ValueSet/\$expand(http:RequestContext ctx, http:Request request) returns json|xml|r4:FHIRError {
         log:printDebug(string `FHIR Terminology request is received. Interaction: ValueSet Expand`);
 

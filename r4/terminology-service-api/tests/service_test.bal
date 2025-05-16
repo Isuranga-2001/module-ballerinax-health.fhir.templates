@@ -13,6 +13,7 @@ http:Client vsClient = check new ("http://localhost:9089/fhir/r4/ValueSet");
 @test:BeforeSuite
 isolated function beforeSuite() returns error? {
     check store:setupTestDB();
+    check addExampleDataToTestDB();
 }
 
 @test:AfterSuite
@@ -22,7 +23,7 @@ function afterSuite() returns error? {
 
 @test:Mock {functionName: "initializeClient"}
 isolated function getMockClient() returns store:Client|error {
-    return test:mock(store:Client, check new store:H2Client("jdbc:h2:./test", "sa", ""));
+    return test:mock(store:Client, check new store:H2Client("jdbc:h2:./tests/test", "sa", ""));
 }
 
 @test:Config {
@@ -31,8 +32,11 @@ isolated function getMockClient() returns store:Client|error {
 public function getByIdCodeSystem1() returns error? {
     http:Response response = check csClient->get("/account-status");
 
-    json expected = returnCodeSystemData("account-status");
-    test:assertEquals(response.getJsonPayload(), expected);
+    r4:CodeSystem expected = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
+    if (IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED) {
+        expected.concept = ();
+    }
+    test:assertEquals(response.getJsonPayload(), expected.toJson());
 }
 
 @test:Config {
@@ -41,8 +45,11 @@ public function getByIdCodeSystem1() returns error? {
 public function getByIdCodeSystem2() returns error? {
     http:Response response = check csClient->get("/account-status%7C4.0.1");
 
-    json expected = returnCodeSystemData("account-status");
-    test:assertEquals(response.getJsonPayload(), expected);
+    r4:CodeSystem expected = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
+    if (IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED) {
+        expected.concept = ();
+    }
+    test:assertEquals(response.getJsonPayload(), expected.toJson());
 }
 
 @test:Config {
@@ -57,6 +64,19 @@ public function searchCodeSystem1() returns error? {
     expected.meta.lastUpdated = actual.meta.lastUpdated;
     expected.'type = r4:BUNDLE_TYPE_SEARCHSET;
 
+    if (IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED) {
+        expected.entry = [];
+        
+        r4:CodeSystem codeSystem = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
+        codeSystem.concept = ();
+        r4:BundleEntry entry = {
+            'resource: codeSystem,
+            search: {mode: "match"}
+        };
+        expected.entry = [entry];
+        expected.total = 1;
+    }
+
     test:assertEquals(actual.toJson(), expected.toJson());
 }
 
@@ -70,6 +90,19 @@ public function searchCodeSystem2() returns error? {
 
     r4:Bundle expected = check returnCodeSystemData("account-status-bundle").cloneWithType(r4:Bundle);
     expected.meta.lastUpdated = actual.meta.lastUpdated;
+
+    if (IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED) {
+        expected.entry = [];
+        
+        r4:CodeSystem codeSystem = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
+        codeSystem.concept = ();
+        r4:BundleEntry entry = {
+            'resource: codeSystem,
+            search: {mode: "match"}
+        };
+        expected.entry = [entry];
+        expected.total = 1;
+    }
 
     test:assertEquals(actual.toJson(), expected.toJson());
 }
