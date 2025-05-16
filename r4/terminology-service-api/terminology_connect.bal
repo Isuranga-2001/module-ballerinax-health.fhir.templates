@@ -658,7 +658,7 @@ public isolated function create(http:Request payload) returns r4:FHIRError? {
         string path = payload.getQueryParamValue("path") ?: "";
         string dirPath;
 
-         lock {
+        lock {
             fileCount = fileCount + 1;
             dirPath = "create/payload_" + fileCount.toString();
         }

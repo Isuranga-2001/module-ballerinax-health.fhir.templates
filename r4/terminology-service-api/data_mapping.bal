@@ -77,12 +77,6 @@ isolated function streamToStoreValueSet(stream<store:ValueSet, persist:Error?> v
     return dbValueSets;
 }
 
-isolated function streamToStoreValueSetComposeInclude(stream<store:ValueSetComposeInclude, persist:Error?> conceptStream) returns store:ValueSetComposeInclude[]|error {
-    store:ValueSetComposeInclude[] dbConcepts = check from store:ValueSetComposeInclude concept in conceptStream
-        select concept;
-    return dbConcepts;
-}
-
 isolated function streamToByteArray(stream<byte[], error?> byteArrayStream) returns byte[]|error {
     return check jsondata:parseStream(byteArrayStream);
 }
@@ -191,9 +185,9 @@ isolated function xmlCodeSystemToR4CodeSystem(XMLCodeSystem xmlCodeSystem) retur
     count: xmlCodeSystem.count?.value,
     versionNeeded: xmlCodeSystem.versionNeeded?.value,
     text: mapText(xmlCodeSystem.text),
-    identifier: mapIdentifiers(xmlCodeSystem.identifierList),
-    filter: mapFilters(xmlCodeSystem.filters),
-    property: mapProperties(xmlCodeSystem.properties),
+    identifier: mapIdentifiers(xmlCodeSystem.identifier),
+    filter: mapFilters(xmlCodeSystem.filter),
+    property: mapProperties(xmlCodeSystem.property),
     contact: mapContacts(xmlCodeSystem.contact),
     hierarchyMeaning: mapHierarchyMeaning(xmlCodeSystem.hierarchyMeaning),
     concept: mapConcepts(xmlCodeSystem.concept)
@@ -207,10 +201,10 @@ isolated function mapFilters(ValueFilter[]? filters) returns r4:CodeSystemFilter
     r4:CodeSystemFilter[] r4Filters = [];
     foreach var filter in filters {
         r4Filters.push({
-            code: filter.code?.value,
+            code: filter.code.value,
             description: filter.description?.value,
-            operator: [<r4:CodeSystemFilterOperator>filter.operator?.value],
-            value: filter.value?.value
+            operator: filter.operator.map(op => <r4:CodeSystemFilterOperator>op.value),
+            value: filter.value.value
         });
     }
 
@@ -229,8 +223,8 @@ isolated function mapProperties(ValueProperty[]? properties) returns r4:CodeSyst
     foreach var property in properties {
         r4Properties.push({
             code: property.code.value,
-            uri: property.uri.value,
-            description: property.description.value,
+            uri: property.uri?.value,
+            description: property.description?.value,
             'type: <r4:CodeSystemPropertyType>property.'type.value
         });
     }
@@ -241,7 +235,7 @@ isolated function mapProperties(ValueProperty[]? properties) returns r4:CodeSyst
     return r4Properties;
 }
 
-// Helper function to map Concept[]? to r4:CodeSystemConcept[]
+// Helper function to map Concept[]? to r4:CodeSystemConcept[]?
 isolated function mapConcepts(ValueConcept[]? concepts) returns r4:CodeSystemConcept[]? {
     if concepts is () {
         return ();

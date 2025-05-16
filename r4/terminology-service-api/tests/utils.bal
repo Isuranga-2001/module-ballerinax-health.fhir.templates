@@ -29,6 +29,17 @@ function returnCodeSystemData(string fileName) returns json {
     }
 }
 
+function returnCodeSystemDataXml(string fileName) returns xml {
+    string filePath = string `tests/resources/code_systems/${fileName}.xml`;
+    xml|error data = io:fileReadXml(filePath);
+
+    if data is xml {
+        return data;
+    } else {
+        test:assertFail(string `Can not load data from: ${filePath}`);
+    }
+}
+
 function returnValueSetData(string fileName) returns json {
     string filePath = string `tests/resources/value_sets/${fileName}.json`;
     json|error data = io:fileReadJson(filePath);

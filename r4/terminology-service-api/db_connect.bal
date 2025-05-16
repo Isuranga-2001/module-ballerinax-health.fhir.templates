@@ -76,28 +76,21 @@ public isolated class TerminologySource {
     }
 
     public isolated function findCodeSystem(r4:uri? system, string? id, string? version = ()) returns r4:CodeSystem|r4:FHIRError {
-        r4:CodeSystem|r4:FHIRError|error dbCodeSystem;
+        r4:CodeSystem|r4:FHIRError|error? dbCodeSystem = ();
 
         if id != () {
             dbCodeSystem = getCodeSystemByID(id, version);
         } else if system != () {
             dbCodeSystem = getCodeSystemByURL(system, version);
-        } else {
-            return r4:createFHIRError(
-                    "Id or URL for the codesystem is required to find CodeSystem",
-                    r4:ERROR,
-                    r4:INVALID_REQUIRED,
-                    cause = error("No matching CodeSystem found"),
-                    httpStatusCode = http:STATUS_BAD_REQUEST);
-        }
+        } 
 
         if dbCodeSystem is r4:FHIRError {
             return dbCodeSystem;
         }
 
-        if dbCodeSystem is error {
+        if dbCodeSystem is error || dbCodeSystem is () {
             return r4:createFHIRError(
-                    dbCodeSystem.message(),
+                    dbCodeSystem is error ? dbCodeSystem.message() : "Id or URL for the codesystem is required to find CodeSystem",
                     r4:ERROR,
                     r4:PROCESSING_NOT_FOUND,
                     cause = dbCodeSystem,
@@ -453,27 +446,6 @@ isolated function findConceptInCodeSystem(r4:uri system, r4:code code, string? v
         url: system,
         concept: codeSystemConcept
     };
-}
-
-// functions
-
-isolated function getAllCodeSystems() returns r4:CodeSystem[]|error {
-    stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems();
-    store:CodeSystem[] dbCodeSystems = check streamToStoreCodeSystem(codeSystemStream);
-
-    r4:CodeSystem[] codeSystemArray = [];
-
-    foreach store:CodeSystem dbCodeSystem in dbCodeSystems {
-        r4:CodeSystem|error parsedCodeSystem = byteToCodeSystem(dbCodeSystem.codeSystem);
-        if parsedCodeSystem is error {
-            // skip this code system if parsing fails
-            continue;
-        }
-
-        codeSystemArray.push(parsedCodeSystem);
-    }
-
-    return codeSystemArray;
 }
 
 isolated function getCodeSystemByID(string id, string? version = ()) returns r4:CodeSystem|error {
