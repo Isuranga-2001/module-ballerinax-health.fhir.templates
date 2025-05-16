@@ -198,28 +198,21 @@ isolated function designationToParameter(r4:CodeSystemConceptDesignation designa
     return param;
 }
 
-isolated function extractZipFile(string dirPath, string zipFilePath) returns string|error {
-    string extractedFolderPath = dirPath + "/extracted";
-    // check zip:extract("tests/resources/test.zip", extractedFolderPath);
-    check zip:extract(zipFilePath, extractedFolderPath);
-
-    return extractedFolderPath;
+isolated function extractZipFile(string dirPath) returns error? {
+    check zip:extract(dirPath + ZIP_FILE_NAME, dirPath + ZIP_FILE_EXTRACTION_PATH);
 }
 
 isolated function removeDirectory(string dirPath) returns error? {
-    if check file:test(dirPath, file:EXISTS) && check file:test(dirPath, file:WRITABLE) {
+    if check file:test(dirPath, file:EXISTS) {
         check file:remove(dirPath, file:RECURSIVE);
     }
 }
 
-isolated function saveCompressedPayload(stream<byte[], io:Error?> payloadStream, string dirPath) returns string|error {
+isolated function saveCompressedPayload(stream<byte[], io:Error?> payloadStream, string dirPath) returns error? {
     check removeDirectory(dirPath);
     check file:createDir(dirPath, file:RECURSIVE);
 
-    string zipFilePath = dirPath + "/file.zip";
-    check io:fileWriteBlocksFromStream(zipFilePath, payloadStream);
-
-    return zipFilePath;
+    check io:fileWriteBlocksFromStream(dirPath + ZIP_FILE_NAME, payloadStream);
 }
 
 isolated function readFiles(string path) returns CodeSystemValueSetJson|error {
@@ -245,5 +238,5 @@ isolated function readFiles(string path) returns CodeSystemValueSetJson|error {
 }
 
 function init() returns error? {
-    check removeDirectory("create");
+    check removeDirectory(UPLOAD_DATA_DIRECTORY_NAME);
 }

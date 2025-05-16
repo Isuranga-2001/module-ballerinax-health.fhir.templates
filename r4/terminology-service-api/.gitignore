@@ -1,5 +1,7 @@
 target
 generated
 Config.toml
-create
+temp_files
 *.db
+
+!test.zip

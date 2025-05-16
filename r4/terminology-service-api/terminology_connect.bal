@@ -659,13 +659,13 @@ public isolated function create(http:Request payload) returns r4:FHIRError? {
 
         lock {
             fileCount = fileCount + 1;
-            dirPath = "create/payload_" + fileCount.toString();
+            dirPath = UPLOAD_DATA_DIRECTORY_NAME + "/payload_" + fileCount.toString();
         }
 
-        string zipFilePath = check saveCompressedPayload(check payload.getByteStream(), dirPath);
-        string extractedFolderPath = check extractZipFile(dirPath, zipFilePath);
+        check saveCompressedPayload(check payload.getByteStream(), dirPath);
+        check extractZipFile(dirPath);
 
-        CodeSystemValueSetJson jsonArrays = check readFiles(extractedFolderPath + (path != "" ? "/" + path : ""));
+        CodeSystemValueSetJson jsonArrays = check readFiles(dirPath + ZIP_FILE_EXTRACTION_PATH + (path != "" ? "/" + path : ""));
 
         if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
             _ = terminology:addCodeSystemsAsJson(jsonArrays.codeSystems, terminology = terminology_source);
@@ -674,6 +674,8 @@ public isolated function create(http:Request payload) returns r4:FHIRError? {
             _ = terminology:addCodeSystemsAsJson(jsonArrays.codeSystems);
             _ = terminology:addValueSetsAsJson(jsonArrays.valueSets);
         }
+
+        _ = start removeDirectory(dirPath);
     } on fail var e {
         return r4:createFHIRError(
                 "Invalid request payload, " + e.message(),
