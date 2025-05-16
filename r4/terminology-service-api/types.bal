@@ -100,15 +100,15 @@ type XMLCodeSystem record {
     ValueBoolean versionNeeded?;
     ValueString content?;
     ValueString description?;
-    ValueFilter[] filters?;
-    ValueProperty[] properties?;
+    ValueFilter[] filter?;
+    ValueProperty[] property?;
     ValueString date?;
     ValueString purpose?;
     ValueString language?;
     ValueConcept[] concept?;
     ValueString[] contactDetail?;
     ValueString[] propertyDetail?;
-    ValueString[] identifierList?;
+    ValueString[] identifier?;
     ValueString text?;
     ValueInt count?;
     ValueString version?;
@@ -135,15 +135,16 @@ type ValueInt record {
 
 type ValueFilter record {
     ValueString code;
-    ValueString description;
-    ValueString operator;
+    ValueString description?;
+    ValueString id?;
+    ValueString[] operator;
     ValueString value;
 };
 
 type ValueProperty record {
     ValueString code;
-    ValueString uri;
-    ValueString description;
+    ValueString uri?;
+    ValueString description?;
     ValueString 'type;
 };
 

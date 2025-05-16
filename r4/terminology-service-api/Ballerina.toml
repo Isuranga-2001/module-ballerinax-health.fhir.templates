@@ -38,16 +38,8 @@ name = "health.fhir.r4.terminology"
 version = "5.0.3"
 repository = "local"
 
-[[tool.persist]]
-id = "generate-db-client"
-targetModule = "terminology_service_api.store"
-options.datastore = "mysql"
-options.testDatastore = "h2"
-filePath = "persist/model.bal"
-
 [[platform.java21.dependency]]
 groupId = "io.ballerina.stdlib"
 artifactId = "persist.sql-native"
 version = "1.6.0"
-
 

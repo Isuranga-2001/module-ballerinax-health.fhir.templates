@@ -16,12 +16,24 @@
 
 import ballerina/io;
 import ballerina/test;
+import ballerinax/health.fhir.r4.terminology;
 
 function returnCodeSystemData(string fileName) returns json {
     string filePath = string `tests/resources/code_systems/${fileName}.json`;
     json|error data = io:fileReadJson(filePath);
 
     if data is json {
+        return data;
+    } else {
+        test:assertFail(string `Can not load data from: ${filePath}`);
+    }
+}
+
+function returnCodeSystemDataXml(string fileName) returns xml {
+    string filePath = string `tests/resources/code_systems/${fileName}.xml`;
+    xml|error data = io:fileReadXml(filePath);
+
+    if data is xml {
         return data;
     } else {
         test:assertFail(string `Can not load data from: ${filePath}`);
@@ -58,5 +70,23 @@ function readJsonData(string fileName) returns json {
         return data;
     } else {
         test:assertFail(string `Can not load data from: ${filePath}`);
+    }
+}
+
+public function readZipFileAsBytes(string fileName) returns byte[]|error {
+    string filePath = string `tests/resources/${fileName}`;
+    return io:fileReadBytes(filePath);
+}
+
+isolated function addExampleDataToTestDB() returns error? {
+    string[] codeSystemList = ["http://hl7.org/fhir/account-status", "http://hl7.org/fhir/abstract-types"];
+    string[] valueSetList = ["http://hl7.org/fhir/ValueSet/abstract-types", "http://hl7.org/fhir/ValueSet/account-status"];
+
+    foreach string item in codeSystemList {
+        _ = check terminology:addCodeSystem(check terminology:readCodeSystemByUrl(item), terminology = terminology_source);
+    }
+
+    foreach string item in valueSetList {
+        _ = check terminology:addValueSet(check terminology:readValueSetByUrl(item), terminology = terminology_source);
     }
 }

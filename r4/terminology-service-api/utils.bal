@@ -200,24 +200,24 @@ isolated function designationToParameter(r4:CodeSystemConceptDesignation designa
 
 isolated function extractZipFile(string dirPath, string zipFilePath) returns string|error {
     string extractedFolderPath = dirPath + "/extracted";
+    // check zip:extract("tests/resources/test.zip", extractedFolderPath);
     check zip:extract(zipFilePath, extractedFolderPath);
 
     return extractedFolderPath;
 }
 
 isolated function removeDirectory(string dirPath) returns error? {
-    check file:remove(dirPath, file:RECURSIVE);
+    if check file:test(dirPath, file:EXISTS) && check file:test(dirPath, file:WRITABLE) {
+        check file:remove(dirPath, file:RECURSIVE);
+    }
 }
 
-isolated function saveCompressedPayload(stream<byte[], error?> payloadStream, string dirPath) returns string|error {
-    // TODO: add the logic to create create directory in the init function
-    if check file:test(dirPath, file:EXISTS) {
-        check removeDirectory(dirPath);
-    }
-    check file:createDir(dirPath);
+isolated function saveCompressedPayload(stream<byte[], io:Error?> payloadStream, string dirPath) returns string|error {
+    check removeDirectory(dirPath);
+    check file:createDir(dirPath, file:RECURSIVE);
 
     string zipFilePath = dirPath + "/file.zip";
-    check io:fileWriteBytes(zipFilePath, check streamToBytes(payloadStream));
+    check io:fileWriteBlocksFromStream(zipFilePath, payloadStream);
 
     return zipFilePath;
 }
@@ -242,4 +242,8 @@ isolated function readFiles(string path) returns CodeSystemValueSetJson|error {
     }
 
     return jsonArrays;
+}
+
+function init() returns error? {
+    check removeDirectory("create");
 }
