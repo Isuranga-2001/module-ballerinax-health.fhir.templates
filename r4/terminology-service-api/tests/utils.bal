@@ -73,6 +73,11 @@ function readJsonData(string fileName) returns json {
     }
 }
 
+public function readZipFileAsBytes(string fileName) returns byte[]|error {
+    string filePath = string `tests/resources/${fileName}`;
+    return io:fileReadBytes(filePath);
+}
+
 isolated function addExampleDataToTestDB() returns error? {
     string[] codeSystemList = ["http://hl7.org/fhir/account-status", "http://hl7.org/fhir/abstract-types"];
     string[] valueSetList = ["http://hl7.org/fhir/ValueSet/abstract-types", "http://hl7.org/fhir/ValueSet/account-status"];

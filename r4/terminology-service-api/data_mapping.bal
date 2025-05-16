@@ -1,6 +1,5 @@
 import terminology_service_api.store;
 
-import ballerina/data.jsondata;
 import ballerina/http;
 import ballerina/persist;
 import ballerinax/health.fhir.r4;
@@ -75,10 +74,6 @@ isolated function streamToStoreValueSet(stream<store:ValueSet, persist:Error?> v
     store:ValueSet[] dbValueSets = check from store:ValueSet valueSet in valueSetStream
         select valueSet;
     return dbValueSets;
-}
-
-isolated function streamToByteArray(stream<byte[], error?> byteArrayStream) returns byte[]|error {
-    return check jsondata:parseStream(byteArrayStream);
 }
 
 isolated function streamToBytes(stream<byte[], error?> byteStream) returns byte[]|error {

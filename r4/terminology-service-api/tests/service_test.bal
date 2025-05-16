@@ -834,3 +834,17 @@ public function testAddEmptyValueSetPayload() returns error? {
     expected.issue[0].diagnostics = (<r4:OperationOutcomeIssue[]>actual.issue)[0].diagnostics;
     test:assertEquals(actual, expected);
 }
+
+// @test:Config {
+//     groups: ["create", "successful_scenario"]
+// }
+// public function testCreate() returns error? {
+//     byte[] zipBytes = check readZipFileAsBytes("test.zip");
+
+//     http:Request req = new;
+//     req.setPayload(zipBytes, contentType = "application/zip");
+
+//     http:Response response = check baseClient->post("/create?path=hl7.terminology.r4/package", req);
+//     // io:println("Response: ", response.getJsonPayload());
+//     test:assertEquals(response.statusCode, 202);
+// }
