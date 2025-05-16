@@ -6,7 +6,6 @@ import ballerina/time;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
-import ballerina/lang.runtime;
 
 final TerminologySource db_terminology_source = new ();
 
@@ -569,15 +568,13 @@ isolated function getSystemAndCode(string input) returns map<string> {
     return {"system": system, "code": code};
 }
 
-public isolated function addCodeSystemFromStream(http:Request req) returns r4:FHIRError? {
+public isolated function addCodeSystem(http:Request req) returns r4:FHIRError? {
     do {
-        stream<byte[], error?> payloadStream = check req.getByteStream();
-
         string contentType = req.getContentType();
         r4:CodeSystem codeSystem;
 
         if contentType == "application/json" {
-            ParseCodeSystem parsedCodeSystem = check jsondata:parseStream(s = payloadStream);
+            ParseCodeSystem parsedCodeSystem = check jsondata:parseStream(check req.getByteStream());
 
             if parsedCodeSystem.content is () || parsedCodeSystem.status is () {
                 return r4:createFHIRError(
@@ -589,7 +586,7 @@ public isolated function addCodeSystemFromStream(http:Request req) returns r4:FH
 
             codeSystem = parseCodeSystemToR4CodeSystem(parsedCodeSystem);
         } else if contentType == "application/xml" {
-            XMLCodeSystem parsedCodeSystem = check xmldata:parseStream(s = payloadStream);
+            XMLCodeSystem parsedCodeSystem = check xmldata:parseStream(check req.getByteStream());
 
             if parsedCodeSystem.content is () || parsedCodeSystem.status is () {
                 return r4:createFHIRError(
@@ -600,6 +597,28 @@ public isolated function addCodeSystemFromStream(http:Request req) returns r4:FH
             }
 
             codeSystem = xmlCodeSystemToR4CodeSystem(parsedCodeSystem);
+        } else if contentType == "application/zip" {
+            string path = req.getQueryParamValue("path") ?: "";
+            string dirPath;
+
+            lock {
+                fileCount = fileCount + 1;
+                dirPath = TEMPORARY_FILES_DIRECTORY_NAME + "/payload_" + fileCount.toString();
+            }
+
+            check saveCompressedPayload(check req.getByteStream(), dirPath);
+            check extractZipFile(dirPath);
+
+            json[] codeSystems = check readFilesAsJsons(dirPath + ZIP_FILE_EXTRACTION_PATH + (path != "" ? "/" + path : ""));
+
+            if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
+                _ = terminology:addCodeSystemsAsJson(codeSystems, terminology = terminology_source);
+            } else {
+                _ = terminology:addCodeSystemsAsJson(codeSystems);
+            }
+
+            _ = start removeDirectory(dirPath);
+            return;
         } else {
             return r4:createFHIRError(
                     "Invalid request payload, content type is not supported",
@@ -624,24 +643,56 @@ public isolated function addCodeSystemFromStream(http:Request req) returns r4:FH
     }
 }
 
-public isolated function addValueSetFromStream(http:Request valueSetPayload) returns r4:FHIRError? {
+public isolated function addValueSet(http:Request req) returns r4:FHIRError? {
     do {
-        stream<byte[], error?> payloadStream = check valueSetPayload.getByteStream();
-        ParseValueSet parseValueSet = check jsondata:parseStream(s = payloadStream);
-        if parseValueSet.status is () {
+        string contentType = req.getContentType();
+
+        if contentType == "application/json" {
+            stream<byte[], error?> payloadStream = check req.getByteStream();
+            ParseValueSet parseValueSet = check jsondata:parseStream(s = payloadStream);
+            if parseValueSet.status is () {
+                return r4:createFHIRError(
+                        "Invalid request payload",
+                        r4:ERROR,
+                        r4:INVALID_REQUIRED,
+                        httpStatusCode = http:STATUS_BAD_REQUEST);
+            }
+
+            r4:ValueSet valueSet = parseValueSetToR4ValueSet(parseValueSet);
+
+            if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
+                return terminology:addValueSet(valueSet, terminology = terminology_source);
+            } else {
+                return terminology:addValueSet(valueSet);
+            }
+        } else if contentType == "application/zip" {
+            string path = req.getQueryParamValue("path") ?: "";
+            string dirPath;
+
+            lock {
+                fileCount = fileCount + 1;
+                dirPath = TEMPORARY_FILES_DIRECTORY_NAME + "/payload_" + fileCount.toString();
+            }
+
+            check saveCompressedPayload(check req.getByteStream(), dirPath);
+            check extractZipFile(dirPath);
+
+            json[] codeSystems = check readFilesAsJsons(dirPath + ZIP_FILE_EXTRACTION_PATH + (path != "" ? "/" + path : ""));
+
+            if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
+                _ = terminology:addValueSetsAsJson(codeSystems, terminology = terminology_source);
+            } else {
+                _ = terminology:addValueSetsAsJson(codeSystems);
+            }
+
+            _ = start removeDirectory(dirPath);
+            return;
+        } else {
             return r4:createFHIRError(
-                    "Invalid request payload",
+                    "Invalid request payload, content type is not supported",
                     r4:ERROR,
                     r4:INVALID_REQUIRED,
                     httpStatusCode = http:STATUS_BAD_REQUEST);
-        }
-
-        r4:ValueSet valueSet = parseValueSetToR4ValueSet(parseValueSet);
-
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            return terminology:addValueSet(valueSet, terminology = terminology_source);
-        } else {
-            return terminology:addValueSet(valueSet);
         }
     } on fail var e {
         return r4:createFHIRError(
@@ -653,21 +704,20 @@ public isolated function addValueSetFromStream(http:Request valueSetPayload) ret
     }
 }
 
-public isolated function create(http:Request payload) returns r4:FHIRError? {
+public isolated function upload(http:Request payload) returns r4:FHIRError? {
     do {
         string path = payload.getQueryParamValue("path") ?: "";
         string dirPath;
 
         lock {
             fileCount = fileCount + 1;
-            dirPath = "create/payload_" + fileCount.toString();
+            dirPath = TEMPORARY_FILES_DIRECTORY_NAME + "/payload_" + fileCount.toString();
         }
 
-        string zipFilePath = check saveCompressedPayload(check payload.getByteStream(), dirPath);
-        runtime:sleep(1);
-        string extractedFolderPath = check extractZipFile(dirPath, zipFilePath);
+        check saveCompressedPayload(check payload.getByteStream(), dirPath);
+        check extractZipFile(dirPath);
 
-        CodeSystemValueSetJson jsonArrays = check readFiles(extractedFolderPath + (path != "" ? "/" + path : ""));
+        CodeSystemValueSetJson jsonArrays = check readFilesForUpload(dirPath + ZIP_FILE_EXTRACTION_PATH + (path != "" ? "/" + path : ""));
 
         if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
             _ = terminology:addCodeSystemsAsJson(jsonArrays.codeSystems, terminology = terminology_source);
@@ -677,7 +727,7 @@ public isolated function create(http:Request payload) returns r4:FHIRError? {
             _ = terminology:addValueSetsAsJson(jsonArrays.valueSets);
         }
 
-        check removeDirectory(dirPath);
+        _ = start removeDirectory(dirPath);
     } on fail var e {
         return r4:createFHIRError(
                 "Invalid request payload, " + e.message(),

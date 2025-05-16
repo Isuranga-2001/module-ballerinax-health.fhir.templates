@@ -198,31 +198,24 @@ isolated function designationToParameter(r4:CodeSystemConceptDesignation designa
     return param;
 }
 
-isolated function extractZipFile(string dirPath, string zipFilePath) returns string|error {
-    string extractedFolderPath = dirPath + "/extracted";
-    // check zip:extract("tests/resources/test.zip", extractedFolderPath);
-    check zip:extract(zipFilePath, extractedFolderPath);
-
-    return extractedFolderPath;
+isolated function extractZipFile(string dirPath) returns error? {
+    check zip:extract(dirPath + ZIP_FILE_NAME, dirPath + ZIP_FILE_EXTRACTION_PATH);
 }
 
 isolated function removeDirectory(string dirPath) returns error? {
-    if check file:test(dirPath, file:EXISTS) && check file:test(dirPath, file:WRITABLE) {
+    if check file:test(dirPath, file:EXISTS) {
         check file:remove(dirPath, file:RECURSIVE);
     }
 }
 
-isolated function saveCompressedPayload(stream<byte[], io:Error?> payloadStream, string dirPath) returns string|error {
+isolated function saveCompressedPayload(stream<byte[], io:Error?> payloadStream, string dirPath) returns error? {
     check removeDirectory(dirPath);
     check file:createDir(dirPath, file:RECURSIVE);
 
-    string zipFilePath = dirPath + "/file.zip";
-    check io:fileWriteBlocksFromStream(zipFilePath, payloadStream);
-
-    return zipFilePath;
+    check io:fileWriteBlocksFromStream(dirPath + ZIP_FILE_NAME, payloadStream);
 }
 
-isolated function readFiles(string path) returns CodeSystemValueSetJson|error {
+isolated function readFilesForUpload(string path) returns CodeSystemValueSetJson|error {
     file:MetaData[] readDir = check file:readDir(path);
 
     CodeSystemValueSetJson jsonArrays = {
@@ -244,6 +237,23 @@ isolated function readFiles(string path) returns CodeSystemValueSetJson|error {
     return jsonArrays;
 }
 
+isolated function readFilesAsJsons(string path) returns json[]|error {
+    file:MetaData[] readDir = check file:readDir(path);
+    
+    json[] jsonList = [];
+
+    foreach var item in readDir {
+        string[] nonEmptyParts = regex:split(item.absPath, "\\\\").filter(s => s != "");
+        string lastPart = nonEmptyParts[nonEmptyParts.length() - 1];
+
+        if lastPart.endsWith(".json") {
+            jsonList.push(check io:fileReadJson(item.absPath));
+        }
+    }
+
+    return jsonList;
+}
+
 function init() returns error? {
-    check removeDirectory("create");
+    check removeDirectory(TEMPORARY_FILES_DIRECTORY_NAME);
 }

@@ -1,4 +1,9 @@
 target
 generated
 Config.toml
+temp_files
 *.db
+
+!test.zip
+!codesystem.zip
+!valueset.zip
