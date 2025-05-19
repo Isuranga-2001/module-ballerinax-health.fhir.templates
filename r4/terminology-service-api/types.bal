@@ -5,6 +5,12 @@ public type CodeSystemValueSetJson record {|
     json[] valueSets;
 |};
 
+public type ColumnValue record {|
+    string columnName;
+    string columnValue;
+    string operator?;
+|};
+
 public type ParseCodeSystem record {|
     *r4:DomainResource;
 
