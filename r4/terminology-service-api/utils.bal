@@ -1,6 +1,7 @@
 import ballerina/file;
 import ballerina/io;
 import ballerina/regex;
+import ballerina/sql;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 
@@ -198,6 +199,12 @@ isolated function designationToParameter(r4:CodeSystemConceptDesignation designa
     return param;
 }
 
+isolated function stringToParameterizedQuery(string queryStr) returns sql:ParameterizedQuery {
+    sql:ParameterizedQuery query = ``;
+    query.strings = [queryStr];
+    return query;
+}
+
 isolated function extractZipFile(string dirPath) returns error? {
     check zip:extract(dirPath + ZIP_FILE_NAME, dirPath + ZIP_FILE_EXTRACTION_PATH);
 }
@@ -239,7 +246,7 @@ isolated function readFilesForUpload(string path) returns CodeSystemValueSetJson
 
 isolated function readFilesAsJsons(string path) returns json[]|error {
     file:MetaData[] readDir = check file:readDir(path);
-    
+
     json[] jsonList = [];
 
     foreach var item in readDir {
