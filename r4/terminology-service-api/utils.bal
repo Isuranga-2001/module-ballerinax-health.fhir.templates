@@ -4,6 +4,7 @@ import ballerina/regex;
 import ballerina/sql;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
+import ballerinax/health.fhir.r4.parser;
 
 import ballerinacentral/zip;
 
@@ -223,7 +224,7 @@ isolated function saveCompressedPayload(stream<byte[], io:Error?> payloadStream,
 }
 
 isolated function readFilesForUpload(string path) returns CodeSystemValueSetJson|error {
-    file:MetaData[] readDir = check file:readDir(path);
+    file:MetaData[] readDir = check file:readDir(path + FHIR_PACKAGE_PATH);
 
     CodeSystemValueSetJson jsonArrays = {
         codeSystems: [],
@@ -259,6 +260,11 @@ isolated function readFilesAsJsons(string path) returns json[]|error {
     }
 
     return jsonList;
+}
+
+isolated function readFileJsonAndReturnCodeSystem(string path) returns r4:CodeSystem|error {
+    string jsonString = check io:fileReadString(path);
+    return check parser:parse(jsonString).ensureType();
 }
 
 function init() returns error? {

@@ -1,3 +1,5 @@
+import terminology_service_api.loinc_to_fhir as loinc;
+
 import ballerina/data.jsondata;
 import ballerina/data.xmldata;
 import ballerina/http;
@@ -520,7 +522,7 @@ public isolated function addCodeSystem(http:Request req) returns r4:FHIRError? {
 
             codeSystem = xmlCodeSystemToR4CodeSystem(parsedCodeSystem);
         } else if contentType == "application/zip" {
-            string path = req.getQueryParamValue("path") ?: "";
+            string path = req.getQueryParamValue("target-path") ?: "";
             string dirPath;
 
             lock {
@@ -576,7 +578,7 @@ public isolated function addValueSet(http:Request req) returns r4:FHIRError? {
 
             return terminology:addValueSet(valueSet, terminology = terminology_source);
         } else if contentType == "application/zip" {
-            string path = req.getQueryParamValue("path") ?: "";
+            string path = req.getQueryParamValue("target-path") ?: "";
             string dirPath;
 
             lock {
@@ -611,9 +613,43 @@ public isolated function addValueSet(http:Request req) returns r4:FHIRError? {
 }
 
 public isolated function upload(http:Request payload) returns r4:FHIRError? {
+    if payload.getContentType() != "application/zip" {
+        return r4:createFHIRError(
+                "Invalid request payload, content type is not supported",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                diagnostic = "The request payload should be a zip file",
+                httpStatusCode = http:STATUS_BAD_REQUEST);
+    }
+
+    if !payload.hasHeader(TYPE_HEADER) {
+        return r4:createFHIRError(
+                string `Missing ${TYPE_HEADER} header in the request`,
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                diagnostic = string `The request should contains ${TYPE_HEADER} header and supported values are: FHIR, LOINC and SNOMED`,
+                httpStatusCode = http:STATUS_BAD_REQUEST);
+    }
+
     do {
-        string path = payload.getQueryParamValue("path") ?: "";
+        string typeHeader = check payload.getHeader(TYPE_HEADER);
         string dirPath;
+
+        if typeHeader != "FHIR" && typeHeader != "LOINC" && typeHeader != "SNOMED" {
+            return r4:createFHIRError(
+                    string `Invalid ${TYPE_HEADER} header value`,
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    diagnostic = string `The request should contains ${TYPE_HEADER} header and supported values are: FHIR, LOINC and SNOMED`,
+                    httpStatusCode = http:STATUS_BAD_REQUEST);
+        } else if typeHeader == "SNOMED" {
+            // return not implemented error
+            return r4:createFHIRError(
+                    "SNOMED upload is not implemented yet",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    httpStatusCode = http:STATUS_NOT_IMPLEMENTED);
+        }
 
         lock {
             fileCount = fileCount + 1;
@@ -623,12 +659,25 @@ public isolated function upload(http:Request payload) returns r4:FHIRError? {
         check saveCompressedPayload(check payload.getByteStream(), dirPath);
         check extractZipFile(dirPath);
 
-        CodeSystemValueSetJson jsonArrays = check readFilesForUpload(dirPath + ZIP_FILE_EXTRACTION_PATH + (path != "" ? "/" + path : ""));
+        r4:FHIRError? result = ();
 
-        _ = terminology:addCodeSystemsAsJson(jsonArrays.codeSystems, terminology = terminology_source);
-        _ = terminology:addValueSetsAsJson(jsonArrays.valueSets, terminology = terminology_source);
+        if typeHeader == "FHIR" {
+            CodeSystemValueSetJson jsonArrays = check readFilesForUpload(dirPath + ZIP_FILE_EXTRACTION_PATH);
+
+            _ = terminology:addCodeSystemsAsJson(jsonArrays.codeSystems, terminology = terminology_source);
+            _ = terminology:addValueSetsAsJson(jsonArrays.valueSets, terminology = terminology_source);
+        } else if typeHeader == "LOINC" {
+            string? version = payload.getQueryParamValue("loinc-version");
+            check loinc:convert(dirPath + ZIP_FILE_EXTRACTION_PATH, version);
+
+            r4:CodeSystem codeSystem = check readFileJsonAndReturnCodeSystem(dirPath + ZIP_FILE_EXTRACTION_PATH + loinc:FHIR_LOINC_FILE_NAME);
+
+            result = terminology:addCodeSystem(codeSystem, terminology = terminology_source);
+        }
 
         _ = start removeDirectory(dirPath);
+
+        return result;
     } on fail var e {
         return r4:createFHIRError(
                 "Invalid request payload, " + e.message(),

@@ -822,14 +822,58 @@ public function testAddEmptyValueSetPayload() returns error? {
 @test:Config {
     groups: ["upload", "successful_scenario"]
 }
-public function testUpload() returns error? {
+public function testUpload1() returns error? {
     byte[] zipBytes = check readZipFileAsBytes("test.zip");
 
     http:Request req = new;
     req.setPayload(zipBytes, contentType = "application/zip");
+    req.setHeader(TYPE_HEADER, "FHIR");
 
-    http:Response response = check baseClient->post("/upload?path=hl7.terminology.r4/package", req);
-    test:assertEquals(response.statusCode, 202);
+    http:Response response = check baseClient->post("/upload?target-path=hl7.terminology.r4/package", req);
+    test:assertEquals(response.statusCode, 201);
+}
+
+@test:Config {
+    groups: ["upload", "failure_scenario"]
+}
+public function testUpload2() returns error? {
+    http:Request req = new;
+    req.setPayload({}, contentType = "application/json");
+    req.setHeader(TYPE_HEADER, "FHIR");
+
+    http:Response response = check baseClient->post("/upload?target-path=hl7.terminology.r4/package", req);
+    test:assertEquals(response.statusCode, 400);
+}
+
+@test:Config {
+    groups: ["upload", "failure_scenario"]
+}
+public function testUpload3() returns error? {
+    http:Request req = new;
+    req.setPayload({}, contentType = "application/zip");
+
+    // send without the header
+    http:Response response1 = check baseClient->post("/upload", req);
+    test:assertEquals(response1.statusCode, 400);
+
+    // send with invalid header
+    req.setHeader(TYPE_HEADER, "invalid");
+    http:Response response2 = check baseClient->post("/upload", req);
+    test:assertEquals(response2.statusCode, 400);
+}
+
+@test:Config {
+    groups: ["upload", "successful_scenario", "loinc"]
+}
+public function testUploadLoinc() returns error? {
+    byte[] zipBytes = check readZipFileAsBytes("loinc.zip");
+
+    http:Request req = new;
+    req.setPayload(zipBytes, contentType = "application/zip");
+    req.setHeader(TYPE_HEADER, "LOINC");
+
+    http:Response response = check baseClient->post("/upload?loinc-version=2.80", req);
+    test:assertEquals(response.statusCode, 201);
 }
 
 @test:Config {
