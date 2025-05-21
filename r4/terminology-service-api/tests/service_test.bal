@@ -33,9 +33,7 @@ public function getByIdCodeSystem1() returns error? {
     http:Response response = check csClient->get("/account-status");
 
     r4:CodeSystem expected = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
-    if (IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED) {
-        expected.concept = ();
-    }
+    expected.concept = ();
     test:assertEquals(response.getJsonPayload(), expected.toJson());
 }
 
@@ -46,9 +44,7 @@ public function getByIdCodeSystem2() returns error? {
     http:Response response = check csClient->get("/account-status%7C4.0.1");
 
     r4:CodeSystem expected = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
-    if (IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED) {
-        expected.concept = ();
-    }
+    expected.concept = ();
     test:assertEquals(response.getJsonPayload(), expected.toJson());
 }
 
@@ -65,25 +61,19 @@ public function getByIdCodeSystem3() returns error? {
 }
 public function searchCodeSystem1() returns error? {
     http:Response response = check csClient->get("?url=http://hl7.org/fhir/account-status");
+    
     json actualJson = check response.getJsonPayload();
     r4:Bundle actual = check actualJson.cloneWithType(r4:Bundle);
-    r4:Bundle expected;
     
-    if (IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED) {
-        expected = check returnCodeSystemData("empty-bundle").cloneWithType(r4:Bundle);
-        expected.entry = [];
-        
-        r4:CodeSystem codeSystem = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
-        codeSystem.concept = ();
-        r4:BundleEntry entry = {
-            'resource: codeSystem,
-            search: {mode: "match"}
-        };
-        expected.entry = [entry];
-        expected.total = 1;
-    } else {
-        expected = check returnCodeSystemData("account-status-bundle").cloneWithType(r4:Bundle);
-    }
+    r4:Bundle expected = check returnCodeSystemData("empty-bundle").cloneWithType(r4:Bundle);
+    r4:CodeSystem codeSystem = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
+    codeSystem.concept = ();
+    r4:BundleEntry entry = {
+        'resource: codeSystem,
+        search: {mode: "match"}
+    };
+    expected.entry = [entry];
+    expected.total = 1;
     expected.meta.lastUpdated = actual.meta.lastUpdated;
 
     test:assertEquals(actual.toJson(), expected.toJson());
@@ -94,25 +84,19 @@ public function searchCodeSystem1() returns error? {
 }
 public function searchCodeSystem2() returns error? {
     http:Response response = check csClient->get("?url=http://hl7.org/fhir/account-status&version=4.0.1&title=AccountStatus&status=draft&count=10&offset=0&name=AccountStatus&publisher=HL7%20%28FHIR%20Project%29");
+    
     json actualJson = check response.getJsonPayload();
     r4:Bundle actual = check actualJson.cloneWithType(r4:Bundle);
-    r4:Bundle expected;
     
-    if (IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED) {
-        expected = check returnCodeSystemData("empty-bundle").cloneWithType(r4:Bundle);
-        expected.entry = [];
-        
-        r4:CodeSystem codeSystem = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
-        codeSystem.concept = ();
-        r4:BundleEntry entry = {
-            'resource: codeSystem,
-            search: {mode: "match"}
-        };
-        expected.entry = [entry];
-        expected.total = 1;
-    } else {
-        expected = check returnCodeSystemData("account-status-bundle").cloneWithType(r4:Bundle);
-    }
+    r4:Bundle expected = check returnCodeSystemData("empty-bundle").cloneWithType(r4:Bundle);
+    r4:CodeSystem codeSystem = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
+    codeSystem.concept = ();
+    r4:BundleEntry entry = {
+        'resource: codeSystem,
+        search: {mode: "match"}
+    };
+    expected.entry = [entry];
+    expected.total = 1;
     expected.meta.lastUpdated = actual.meta.lastUpdated;
 
     test:assertEquals(actual.toJson(), expected.toJson());
