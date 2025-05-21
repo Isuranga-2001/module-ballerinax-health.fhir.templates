@@ -497,6 +497,7 @@ public isolated function addCodeSystem(http:Request req) returns r4:FHIRError? {
         string contentType = req.getContentType();
         r4:CodeSystem codeSystem;
 
+        // for JSON content
         if contentType == "application/json" {
             ParseCodeSystem parsedCodeSystem = check jsondata:parseStream(check req.getByteStream());
 
@@ -509,7 +510,10 @@ public isolated function addCodeSystem(http:Request req) returns r4:FHIRError? {
             }
 
             codeSystem = parseCodeSystemToR4CodeSystem(parsedCodeSystem);
-        } else if contentType == "application/xml" {
+        }
+
+        // for XML content
+        else if contentType == "application/xml" {
             XMLCodeSystem parsedCodeSystem = check xmldata:parseStream(check req.getByteStream());
 
             if parsedCodeSystem.content is () || parsedCodeSystem.status is () {
@@ -521,14 +525,12 @@ public isolated function addCodeSystem(http:Request req) returns r4:FHIRError? {
             }
 
             codeSystem = xmlCodeSystemToR4CodeSystem(parsedCodeSystem);
-        } else if contentType == "application/zip" {
-            string path = req.getQueryParamValue("target-path") ?: "";
-            string dirPath;
+        }
 
-            lock {
-                fileCount = fileCount + 1;
-                dirPath = TEMPORARY_FILES_DIRECTORY_NAME + "/payload_" + fileCount.toString();
-            }
+        // for zip
+        else if contentType == "application/zip" {
+            string path = req.getQueryParamValue("target-path") ?: "";
+            string dirPath = createNewTempDirectory();
 
             check saveCompressedPayload(check req.getByteStream(), dirPath);
             check extractZipFile(dirPath);
@@ -539,7 +541,10 @@ public isolated function addCodeSystem(http:Request req) returns r4:FHIRError? {
 
             _ = start removeDirectory(dirPath);
             return;
-        } else {
+        }
+
+        // not supported
+        else {
             return r4:createFHIRError(
                     "Invalid request payload, content type is not supported",
                     r4:ERROR,
@@ -555,7 +560,7 @@ public isolated function addCodeSystem(http:Request req) returns r4:FHIRError? {
                 r4:ERROR,
                 r4:INVALID_REQUIRED,
                 cause = e,
-                httpStatusCode = http:STATUS_BAD_REQUEST);
+                httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
     }
 }
 
@@ -563,6 +568,7 @@ public isolated function addValueSet(http:Request req) returns r4:FHIRError? {
     do {
         string contentType = req.getContentType();
 
+        // for JSON content
         if contentType == "application/json" {
             stream<byte[], error?> payloadStream = check req.getByteStream();
             ParseValueSet parseValueSet = check jsondata:parseStream(s = payloadStream);
@@ -577,14 +583,12 @@ public isolated function addValueSet(http:Request req) returns r4:FHIRError? {
             r4:ValueSet valueSet = parseValueSetToR4ValueSet(parseValueSet);
 
             return terminology:addValueSet(valueSet, terminology = terminology_source);
-        } else if contentType == "application/zip" {
-            string path = req.getQueryParamValue("target-path") ?: "";
-            string dirPath;
+        }
 
-            lock {
-                fileCount = fileCount + 1;
-                dirPath = TEMPORARY_FILES_DIRECTORY_NAME + "/payload_" + fileCount.toString();
-            }
+        // for zip
+        else if contentType == "application/zip" {
+            string path = req.getQueryParamValue("target-path") ?: "";
+            string dirPath = createNewTempDirectory();
 
             check saveCompressedPayload(check req.getByteStream(), dirPath);
             check extractZipFile(dirPath);
@@ -595,7 +599,10 @@ public isolated function addValueSet(http:Request req) returns r4:FHIRError? {
 
             _ = start removeDirectory(dirPath);
             return;
-        } else {
+        }
+
+        // not supported
+        else {
             return r4:createFHIRError(
                     "Invalid request payload, content type is not supported",
                     r4:ERROR,
@@ -608,7 +615,7 @@ public isolated function addValueSet(http:Request req) returns r4:FHIRError? {
                 r4:ERROR,
                 r4:INVALID_REQUIRED,
                 cause = e,
-                httpStatusCode = http:STATUS_BAD_REQUEST);
+                httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
     }
 }
 
@@ -622,20 +629,18 @@ public isolated function upload(http:Request payload) returns r4:FHIRError? {
                 httpStatusCode = http:STATUS_BAD_REQUEST);
     }
 
-    if !payload.hasHeader(TYPE_HEADER) {
-        return r4:createFHIRError(
-                string `Missing ${TYPE_HEADER} header in the request`,
-                r4:ERROR,
-                r4:INVALID_REQUIRED,
-                diagnostic = string `The request should contains ${TYPE_HEADER} header and supported values are: FHIR, LOINC and SNOMED`,
-                httpStatusCode = http:STATUS_BAD_REQUEST);
-    }
-
     do {
-        string typeHeader = check payload.getHeader(TYPE_HEADER);
-        string dirPath;
+        string|error typeHeader = payload.getHeader(TYPE_HEADER);
 
-        if typeHeader != "FHIR" && typeHeader != "LOINC" && typeHeader != "SNOMED" {
+        if typeHeader is error {
+            return r4:createFHIRError(
+                    string `Missing ${TYPE_HEADER} header in the request`,
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    diagnostic = string `The request should contains ${TYPE_HEADER} header and supported values are: FHIR, LOINC and SNOMED`,
+                    httpStatusCode = http:STATUS_BAD_REQUEST);
+        }
+        else if typeHeader != "FHIR" && typeHeader != "LOINC" && typeHeader != "SNOMED" {
             return r4:createFHIRError(
                     string `Invalid ${TYPE_HEADER} header value`,
                     r4:ERROR,
@@ -643,7 +648,7 @@ public isolated function upload(http:Request payload) returns r4:FHIRError? {
                     diagnostic = string `The request should contains ${TYPE_HEADER} header and supported values are: FHIR, LOINC and SNOMED`,
                     httpStatusCode = http:STATUS_BAD_REQUEST);
         } else if typeHeader == "SNOMED" {
-            // return not implemented error
+            // TODO: create a module for convert SNOMED to FHIR
             return r4:createFHIRError(
                     "SNOMED upload is not implemented yet",
                     r4:ERROR,
@@ -651,22 +656,23 @@ public isolated function upload(http:Request payload) returns r4:FHIRError? {
                     httpStatusCode = http:STATUS_NOT_IMPLEMENTED);
         }
 
-        lock {
-            fileCount = fileCount + 1;
-            dirPath = TEMPORARY_FILES_DIRECTORY_NAME + "/payload_" + fileCount.toString();
-        }
+        string dirPath = createNewTempDirectory();
 
         check saveCompressedPayload(check payload.getByteStream(), dirPath);
         check extractZipFile(dirPath);
 
         r4:FHIRError? result = ();
 
+        // standard FHIR
         if typeHeader == "FHIR" {
             CodeSystemValueSetJson jsonArrays = check readFilesForUpload(dirPath + ZIP_FILE_EXTRACTION_PATH);
 
             _ = terminology:addCodeSystemsAsJson(jsonArrays.codeSystems, terminology = terminology_source);
             _ = terminology:addValueSetsAsJson(jsonArrays.valueSets, terminology = terminology_source);
-        } else if typeHeader == "LOINC" {
+        }
+
+        // LOINC
+        else if typeHeader == "LOINC" {
             string? version = payload.getQueryParamValue("loinc-version");
             check loinc:convert(dirPath + ZIP_FILE_EXTRACTION_PATH, version);
 
@@ -684,6 +690,6 @@ public isolated function upload(http:Request payload) returns r4:FHIRError? {
                 r4:ERROR,
                 r4:INVALID_REQUIRED,
                 cause = e,
-                httpStatusCode = http:STATUS_BAD_REQUEST);
+                httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
     }
 }

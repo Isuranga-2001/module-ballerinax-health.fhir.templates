@@ -11,6 +11,13 @@ import ballerinacentral/zip;
 // Module-level counter for unique file naming
 isolated int fileCount = 0;
 
+isolated function createNewTempDirectory() returns string {
+    lock {
+        fileCount = fileCount + 1;
+        return TEMPORARY_FILES_DIRECTORY_NAME + "/payload_" + fileCount.toString();
+    }
+}
+
 isolated function validationResultToParameters(international401:Parameters|r4:FHIRError concept) returns international401:Parameters|r4:FHIRError {
     international401:ParametersParameter[] params = [];
     if concept is r4:FHIRError {
