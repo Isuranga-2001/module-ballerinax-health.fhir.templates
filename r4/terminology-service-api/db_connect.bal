@@ -156,20 +156,24 @@ public isolated class TerminologySource {
         return dbValueSet;
     }
 
-    public isolated function isCodeSystemExist(r4:uri system, string? version) returns boolean {
-        r4:CodeSystem|r4:FHIRError|persist:Error|error result = getCodeSystemByURL(system, version);
-        if result is r4:CodeSystem {
-            return true;
-        }
-        return false;
+    public isolated function isCodeSystemExist(r4:uri system, string version) returns boolean {
+        sql:ParameterizedQuery sqlQuery = sql:queryConcat(`SELECT 1 FROM `, escapeToQuery("codesystems"), ` WHERE `, escapeToQuery("url"), ` = ${system} AND `, escapeToQuery("version"), ` = ${version} LIMIT 1`);
+
+        stream<record {}, persist:Error?> resultStream = sClient->queryNativeSQL(sqlQuery);
+        record {}[]|error results = from record {} result in resultStream
+            select result;
+
+        return results is error ? false : results.length() > 0;
     }
 
     public isolated function isValueSetExist(r4:uri system, string version) returns boolean {
-        r4:ValueSet|r4:FHIRError|persist:Error|error result = getValueSetByURL(system, version);
-        if result is r4:ValueSet {
-            return true;
-        }
-        return false;
+        sql:ParameterizedQuery sqlQuery = sql:queryConcat(`SELECT 1 FROM `, escapeToQuery("valuesets"), ` WHERE `, escapeToQuery("url"), ` = ${system} AND `, escapeToQuery("version"), ` = ${version} LIMIT 1`);
+
+        stream<record {}, persist:Error?> resultStream = sClient->queryNativeSQL(sqlQuery);
+        record {}[]|error results = from record {} result in resultStream
+            select result;
+
+        return results is error ? false : results.length() > 0;
     }
 
     public isolated function searchCodeSystem(map<r4:RequestSearchParameter[]> params, int? offset, int? count) returns r4:CodeSystem[]|r4:FHIRError {
