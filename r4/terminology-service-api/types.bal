@@ -1,5 +1,10 @@
 import ballerinax/health.fhir.r4;
 
+type ConceptNode record {|
+    int conceptId;
+    int? parentConceptId;
+|};
+
 public type CodeSystemValueSetJson record {|
     json[] codeSystems;
     json[] valueSets;

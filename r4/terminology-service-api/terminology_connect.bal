@@ -9,7 +9,7 @@ import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
 
-final terminology:Terminology? terminology_source = new TerminologySource();
+final TerminologySource terminology_source = new TerminologySource();
 
 public isolated function readCodeSystemById(string id) returns r4:FHIRError|r4:CodeSystem|r4:FHIRError {
     string[] split = regex:split(id, string `\|`);
@@ -323,7 +323,9 @@ public isolated function subsumesGet(http:RequestContext ctx, http:Request reque
     r4:code? codeB = request.getQueryParamValue("codeB");
 
     if system is string && codeA is r4:code && codeB is r4:code {
-        return terminology:subsumes(codeA, codeB, system = system, version = 'version, terminology = terminology_source);
+        // NOTE: replace the subsume function in terminology library by this subsume function
+        // because this implementation is more efficient than the one in terminology library
+        return terminology_source.subsumes(codeA = codeA, codeB = codeB, system = system, version = 'version);
     } else {
         return r4:createFHIRError(
                 "Missing required input parameters",
@@ -373,7 +375,9 @@ public isolated function subsumesPost(http:RequestContext ctx, http:Request requ
     }
 
     if system is string && codingA is r4:Coding && codingB is r4:Coding {
-        return terminology:subsumes(codingA, codingB, system = system, version = 'version, terminology = terminology_source);
+        // NOTE: replace the subsume function in terminology library by this subsume function
+        // because this implementation is more efficient than the one in terminology library
+        return terminology_source.subsumes(codeA = <r4:code>codingA.code, codeB = <r4:code>codingB.code, system = system, version = 'version);
     } else {
         return r4:createFHIRError(
                 "Missing required input parameters",
@@ -611,7 +615,7 @@ public isolated function addValueSet(http:Request req) returns r4:FHIRError? {
         }
     } on fail var e {
         return r4:createFHIRError(
-                "Invalid request payload",
+                "Invalid request payload, "  + e.message(),
                 r4:ERROR,
                 r4:INVALID_REQUIRED,
                 cause = e,

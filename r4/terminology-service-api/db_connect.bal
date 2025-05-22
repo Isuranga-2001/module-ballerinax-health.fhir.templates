@@ -6,6 +6,7 @@ import ballerina/persist;
 import ballerina/regex;
 import ballerina/sql;
 import ballerinax/health.fhir.r4;
+import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
 
 final store:Client sClient = check initializeClient();
@@ -265,6 +266,58 @@ public isolated class TerminologySource {
 
         return valueSetArray;
     }
+
+    public isolated function subsumes(r4:uri system, r4:code codeA, r4:code codeB, string? version) returns international401:Parameters|r4:FHIRError {
+        var codeSystem = getStoreCodeSystemByURL(system, version);
+
+        if codeSystem !is store:CodeSystem {
+            return r4:createFHIRError(
+                    "CodeSystem not found",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = error("No matching CodeSystem found"),
+                    httpStatusCode = http:STATUS_NOT_FOUND);
+        }
+
+        if codeA == codeB {
+            return {'parameter: [{name: terminology:OUTCOME, valueCode: terminology:EQUIVALENT}]};
+        }
+
+        ConceptNode conceptA = check getConceptNode(codeA, codeSystem.codeSystemId);
+        ConceptNode conceptB = check getConceptNode(codeB, codeSystem.codeSystemId);
+
+        // Check if A is ancestor of B
+        boolean aSubsumesB = isInParentChain(conceptA.conceptId, conceptB);
+        if aSubsumesB {
+            return {'parameter: [{name: terminology:OUTCOME, valueCode: terminology:SUBSUMED}]};
+        }
+
+        // Check if B is ancestor of A
+        boolean bSubsumesA = isInParentChain(conceptB.conceptId, conceptA);
+        if bSubsumesA {
+            return {'parameter: [{name: terminology:OUTCOME, valueCode: terminology:SUBSUMED_BY}]};
+        }
+
+        return {'parameter: [{name: terminology:OUTCOME, valueCode: terminology:NOT_SUBSUMED}]};
+    }    
+}
+
+isolated function isInParentChain(int targetAncestorId, ConceptNode currentNode) returns boolean {
+    int? parentId = currentNode.parentConceptId;
+
+    while parentId is int {
+        if parentId == targetAncestorId {
+            return true;
+        }
+
+        ConceptNode|error nextNode = sClient->/concepts/[parentId](ConceptNode);
+        if nextNode is error {
+            return false;
+        }
+        parentId = nextNode.parentConceptId;
+    }
+
+    return false;
 }
 
 isolated function findConceptInValueSet(r4:uri system, r4:code code, string? version) returns terminology:CodeConceptDetails|r4:FHIRError {
@@ -494,6 +547,33 @@ isolated function getStoreConcept(sql:ParameterizedQuery sqlQuery) returns store
     stream<store:Concept, persist:Error?> conceptStream = sClient->queryNativeSQL(sqlQuery);
     store:Concept[]|error dbConcepts = streamToStoreConcept(conceptStream);
 
+    if dbConcepts is error {
+        return r4:createFHIRError(
+                "Error while searching for Concept, " + dbConcepts.message(),
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                cause = dbConcepts,
+                httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+    }
+
+    if dbConcepts.length() > 0 {
+        return dbConcepts[0];
+    }
+
+    // concept not found
+    return r4:createFHIRError(
+            "Concept not found",
+            r4:ERROR,
+            r4:INVALID_REQUIRED,
+            cause = error("No matching Concept found"),
+            httpStatusCode = http:STATUS_NOT_FOUND);
+}
+
+isolated function getConceptNode(string code, int codeSystemId) returns ConceptNode|r4:FHIRError {
+    sql:ParameterizedQuery sqlQuery =  sql:queryConcat(escapeToQuery("code"), ` = ${code} AND `, escapeToQuery("codesystemCodeSystemId"), ` = ${codeSystemId}`);
+    stream<ConceptNode, persist:Error?> conceptStream = sClient->/concepts(ConceptNode, whereClause = sqlQuery);
+    
+    ConceptNode[]|error dbConcepts = from ConceptNode concept in conceptStream select concept;
     if dbConcepts is error {
         return r4:createFHIRError(
                 "Error while searching for Concept, " + dbConcepts.message(),

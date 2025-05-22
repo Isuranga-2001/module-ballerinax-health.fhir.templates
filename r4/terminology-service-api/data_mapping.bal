@@ -35,8 +35,11 @@ isolated function byteToCodeSystem(byte[] byteArray) returns r4:CodeSystem|error
     return parsedCodeSystem;
 }
 
-isolated function conceptToByte(r4:CodeSystemConcept|r4:ValueSetComposeIncludeConcept concept) returns byte[]|r4:FHIRError {
-    return concept.toJsonString().toBytes();
+isolated function conceptToByte(r4:CodeSystemConcept concept) returns byte[]|r4:FHIRError {
+    r4:CodeSystemConcept conceptWithoutInternlConcept = concept.clone();
+    conceptWithoutInternlConcept.concept = ();
+    
+    return conceptWithoutInternlConcept.toJsonString().toBytes();
 }
 
 isolated function byteToConcept(byte[] byteArray) returns r4:CodeSystemConcept|error {

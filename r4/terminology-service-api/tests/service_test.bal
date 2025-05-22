@@ -142,7 +142,7 @@ public function lookupCodeSystem2() returns error? {
     groups: ["codesystem", "lookup_codesystem", "successful_scenario"]
 }
 public function lookupCodeSystem3() returns error? {
-    r4:Coding|r4:FHIRError coding = terminology:createCoding("http://hl7.org/fhir/account-status", "inactive");
+    r4:Coding|r4:FHIRError coding = terminology:createCoding("http://hl7.org/fhir/account-status", "inactive", terminology = terminology_source);
     international401:Parameters p = {'parameter: [{name: "coding", valueCoding: check coding}]};
     http:Response response = check csClient->post("/%24lookup", p);
     json actual = check response.getJsonPayload();
@@ -227,7 +227,7 @@ public function lookupCodeSystem9() returns error? {
     groups: ["codesystem", "lookup_codesystem", "failure_scenario"]
 }
 public function lookupCodeSystem10() returns error? {
-    r4:Coding coding = check terminology:createCoding("http://hl7.org/fhir/account-status", "inactive");
+    r4:Coding coding = check terminology:createCoding("http://hl7.org/fhir/account-status", "inactive", terminology = terminology_source);
     coding.system = ();
     international401:Parameters parameters = {'parameter: [{name: "coding", valueCoding: coding}]};
     http:Response response = check csClient->post("/%24lookup", parameters);
@@ -263,8 +263,8 @@ public function subsumeCodeSystem2() returns error? {
 }
 public function subsumeCodeSystem3() returns error? {
 
-    r4:Coding codingA = check terminology:createCoding("http://hl7.org/fhir/account-status", "inactive");
-    r4:Coding codingB = check terminology:createCoding("http://hl7.org/fhir/account-status", "inactive");
+    r4:Coding codingA = check terminology:createCoding("http://hl7.org/fhir/account-status", "inactive", terminology = terminology_source);
+    r4:Coding codingB = check terminology:createCoding("http://hl7.org/fhir/account-status", "inactive", terminology = terminology_source);
 
     international401:ParametersParameter cA = {name: "codingA", valueCoding: codingA};
     international401:ParametersParameter cB = {name: "codingB", valueCoding: codingB};
@@ -319,6 +319,74 @@ public function subsumeCodeSystem7() returns error? {
     json actualJson = check response.getJsonPayload();
     r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
     test:assertEquals((<r4:CodeableConcept>actual.issue[0].details).text, "Empty request payload or invalid json format");
+}
+
+@test:Config {
+    dependsOn: [testAddValidCodeSystemJson],
+    groups: ["codesystem", "subsume_codesystem", "successful_scenario"]
+}
+public function subsumeCodeSystem8() returns error? {
+    http:Response response = check csClient->get("/%24subsumes?codeA=2133-7&codeB=2135-2&system=urn:oid:2.16.840.1.113883.6.238");
+    json actual = check response.getJsonPayload();
+
+    json expected = returnCodeSystemData("subsumed");
+    test:assertEquals(actual, expected);
+}
+
+@test:Config {
+    dependsOn: [testAddValidCodeSystemJson],
+    groups: ["codesystem", "subsume_codesystem", "successful_scenario"]
+}
+public function subsumeCodeSystem9() returns error? {
+    http:Response response = check csClient->get("/%24subsumes?codeA=2186-5&codeB=2133-7&system=urn:oid:2.16.840.1.113883.6.238");
+    json actual = check response.getJsonPayload();
+
+    json expected = returnCodeSystemData("subsumed-by");
+    test:assertEquals(actual, expected);
+}
+
+@test:Config {
+    dependsOn: [testAddValidCodeSystemJson],
+    groups: ["codesystem", "subsume_codesystem", "successful_scenario"]
+}
+public function subsumeCodeSystem10() returns error? {
+    http:Response response = check csClient->get("/%24subsumes?codeA=2155-0&codeB=2133-7&system=urn:oid:2.16.840.1.113883.6.238");
+    json actual = check response.getJsonPayload();
+
+    json expected = returnCodeSystemData("subsumed-by");
+    test:assertEquals(actual, expected);
+}
+
+@test:Config {
+    dependsOn: [testAddValidCodeSystemJson],
+    groups: ["codesystem", "subsume_codesystem", "successful_scenario"]
+}
+public function subsumeCodeSystem11() returns error? {
+    http:Response response = check csClient->get("/%24subsumes?codeA=2155-0&codeB=1000-9&system=urn:oid:2.16.840.1.113883.6.238");
+    json actual = check response.getJsonPayload();
+
+    json expected = returnCodeSystemData("subsume-notequal");
+    test:assertEquals(actual, expected);
+}
+
+@test:Config {
+    dependsOn: [testAddValidCodeSystemJson],
+    groups: ["codesystem", "subsume_codesystem", "successful_scenario"]
+}
+public function subsumeCodeSystem12() returns error? {
+    r4:Coding codingA = check terminology:createCoding("urn:oid:2.16.840.1.113883.6.238", "2133-7", terminology = terminology_source);
+    r4:Coding codingB = check terminology:createCoding("urn:oid:2.16.840.1.113883.6.238", "2135-2", terminology = terminology_source);
+
+    international401:ParametersParameter cA = {name: "codingA", valueCoding: codingA};
+    international401:ParametersParameter cB = {name: "codingB", valueCoding: codingB};
+    international401:ParametersParameter system = {name: "system", valueUri: "urn:oid:2.16.840.1.113883.6.238"};
+    international401:Parameters requestPayload = {'parameter: [cA, cB, system]};
+
+    http:Response response = check csClient->post("/%24subsumes", requestPayload);
+    json actual = check response.getJsonPayload();
+
+    json expected = returnCodeSystemData("subsumed");
+    test:assertEquals(actual, expected);
 }
 
 // ===========================Value set======================================
