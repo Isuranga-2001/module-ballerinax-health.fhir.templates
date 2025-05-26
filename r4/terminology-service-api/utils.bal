@@ -7,6 +7,7 @@ import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.parser;
 
 import ballerinacentral/zip;
+import ballerina/time;
 
 // Module-level counter for unique file naming
 isolated int fileCount = 0;
@@ -276,4 +277,15 @@ isolated function readFileJsonAndReturnCodeSystem(string path) returns r4:CodeSy
 
 function init() returns error? {
     check removeDirectory(TEMPORARY_FILES_DIRECTORY_NAME);
+}
+
+isolated function createExpandedValueSet(r4:ValueSet vs, r4:ValueSetExpansionContains[] concepts)
+                                                                                                    returns r4:ValueSetExpansion {
+    r4:ValueSetExpansionContains[] contains = [];
+    foreach r4:ValueSetExpansionContains concept in concepts {
+        r4:ValueSetExpansionContains c = {code: concept.code, display: concept.display, id: concept.id};
+        contains.push(c);
+    }
+    r4:ValueSetExpansion expansion = {timestamp: time:utcToString(time:utcNow()), contains: contains};
+    return expansion;
 }

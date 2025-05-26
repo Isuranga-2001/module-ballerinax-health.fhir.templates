@@ -1,6 +1,7 @@
 import terminology_service_api.store;
 
 import ballerina/http;
+import ballerina/lang.regexp;
 import ballerina/log;
 import ballerina/persist;
 import ballerina/regex;
@@ -284,6 +285,135 @@ public isolated class TerminologySource {
         return valueSetArray;
     }
 
+    public isolated function expandValueSet(map<r4:RequestSearchParameter[]> searchParameters, r4:ValueSet valueSet, int offset, int count) returns r4:ValueSet|r4:FHIRError {
+        store:ValueSet|error dbValueSet = getStoreValueSetByURL(valueSet.url.toString(), valueSet.version);
+        if dbValueSet is error {
+            return r4:createFHIRError(
+                    "ValueSet not found for expansion",
+                    r4:ERROR,
+                    r4:PROCESSING_NOT_FOUND,
+                    cause = dbValueSet,
+                    httpStatusCode = http:STATUS_NOT_FOUND);
+        }
+        int valueSetId = dbValueSet.valueSetId;
+
+        // Get all includes for this ValueSet
+        sql:ParameterizedQuery includeQuery = sql:queryConcat(escapeToQuery("valuesetValueSetId"), ` = ${valueSetId}`);
+        stream<store:ValueSetComposeInclude, persist:Error?> includeStream = sClient->/valuesetcomposeincludes(store:ValueSetComposeInclude, whereClause = includeQuery);
+        store:ValueSetComposeInclude[]|error includes = from store:ValueSetComposeInclude inc in includeStream
+            select inc;
+        if includes is error {
+            return r4:createFHIRError(
+                    "Error fetching ValueSet includes: " + includes.message(),
+                    r4:ERROR,
+                    r4:PROCESSING_NOT_FOUND,
+                    cause = includes,
+                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        r4:ValueSetExpansionContains[] allConcepts = [];
+        string? filter = searchParameters.hasKey(terminology:FILTER) ? searchParameters.get(terminology:FILTER)[0].value : ();
+
+        foreach store:ValueSetComposeInclude include in includes {
+            // If conceptFlag, get concepts from valueset_compose_include_concepts
+            if include.conceptFlag {
+                sql:ParameterizedQuery q = sql:queryConcat(
+                        `SELECT c.* FROM `, escapeToQuery("concepts"), ` c JOIN `, escapeToQuery("valueset_compose_include_concepts"), ` vcic ON c.`, escapeToQuery("conceptId"), ` = vcic.`, escapeToQuery("conceptConceptId"),
+                        ` WHERE vcic.`, escapeToQuery("valuesetcomposeValueSetComposeIncludeId"), ` = ${include.valueSetComposeIncludeId}`
+                );
+                stream<store:Concept, persist:Error?> conceptStream = sClient->queryNativeSQL(q);
+                store:Concept[]|error dbConcepts = from store:Concept c in conceptStream
+                    select c;
+                if dbConcepts is error {
+                    continue;
+                }
+                foreach store:Concept c in dbConcepts {
+                    r4:CodeSystemConcept|error concept = byteToConcept(c.concept);
+                    if concept is r4:CodeSystemConcept {
+                        if filter is string {
+                            if concept.display is string && !regexp:isFullMatch(re `.*${filter.toUpperAscii()}.*`, (<string>concept.display).toUpperAscii()) {
+                                continue;
+                            }
+                        }
+                        r4:ValueSetExpansionContains exp = {code: concept.code, display: concept.display, id: concept.id};
+                        allConcepts.push(exp);
+                    }
+                }
+            }
+            // If systemFlag, get all concepts for the code system
+            else if include.systemFlag && include.codeSystemId is int {
+                sql:ParameterizedQuery query = sql:queryConcat(escapeToQuery("codesystemCodeSystemId"), ` = ${include.codeSystemId}`);
+                stream<store:Concept, persist:Error?> conceptStream = sClient->/concepts(store:Concept, query);
+                store:Concept[]|error dbConcepts = from store:Concept c in conceptStream
+                    select c;
+                if dbConcepts is error {
+                    continue;
+                }
+                foreach store:Concept c in dbConcepts {
+                    r4:CodeSystemConcept|error concept = byteToConcept(c.concept);
+                    if concept is r4:CodeSystemConcept {
+                        if filter is string {
+                            if concept.display is string && !regexp:isFullMatch(re `.*${filter.toUpperAscii()}.*`, (<string>concept.display).toUpperAscii()) {
+                                continue;
+                            }
+                        }
+                        r4:ValueSetExpansionContains exp = {code: concept.code, display: concept.display, id: concept.id};
+                        allConcepts.push(exp);
+                    }
+                }
+            }
+            // If valueSetFlag, get nested value sets and expand recursively
+            else if include.valueSetFlag {
+                sql:ParameterizedQuery q = sql:queryConcat(
+                        `SELECT vs.* FROM `, escapeToQuery("valuesets"), ` vs JOIN `, escapeToQuery("valueset_compose_include_value_sets"), ` vcivs ON vs.`, escapeToQuery("valueSetId"), ` = vcivs.`, escapeToQuery("valuesetValueSetId"),
+                        ` WHERE vcivs.`, escapeToQuery("valuesetcomposeValueSetComposeIncludeId"), ` = ${include.valueSetComposeIncludeId}`
+                );
+                stream<store:ValueSet, persist:Error?> vsStream = sClient->queryNativeSQL(q);
+                store:ValueSet[]|error nestedVS = from store:ValueSet v in vsStream
+                    select v;
+                if nestedVS is error {
+                    continue;
+                }
+                foreach store:ValueSet v in nestedVS {
+                    r4:ValueSet|error parsedVS = byteToValueSet(v.valueSet);
+                    if parsedVS is r4:ValueSet {
+                        r4:ValueSet|r4:FHIRError expanded = self.expandValueSet(searchParameters, parsedVS, 0, 1000); // Recursively expand, no offset/count for nested
+                        if expanded is r4:ValueSet {
+                            if expanded.expansion is r4:ValueSetExpansion {
+                                r4:ValueSetExpansion expansionVal = <r4:ValueSetExpansion>expanded.expansion;
+                                if expansionVal.contains is r4:ValueSetExpansionContains[] {
+                                    r4:ValueSetExpansionContains[] containsArr = <r4:ValueSetExpansionContains[]>expansionVal.contains;
+                                    foreach r4:ValueSetExpansionContains c in containsArr {
+                                        allConcepts.push(c);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Pagination
+        int totalCount = allConcepts.length();
+        r4:ValueSetExpansionContains[] pagedConcepts;
+        if totalCount > offset + count {
+            pagedConcepts = allConcepts.slice(offset, offset + count);
+        } else if totalCount >= offset {
+            pagedConcepts = allConcepts.slice(offset);
+        } else {
+            pagedConcepts = [];
+        }
+
+        // 5. Build expansion
+        // r4:ValueSetExpansion expandedValueSet = createExpandedValueSet(valueSet, pagedConcepts);
+        r4:ValueSetExpansion expansion = createExpandedValueSet(valueSet, pagedConcepts);
+        expansion.total = totalCount;
+        expansion.offset = offset;
+        valueSet.expansion = expansion.clone();
+        return valueSet;
+    }
+
     public isolated function subsumes(r4:uri system, r4:code codeA, r4:code codeB, string? version) returns international401:Parameters|r4:FHIRError {
         var codeSystem = getStoreCodeSystemByURL(system, version);
 
@@ -316,7 +446,7 @@ public isolated class TerminologySource {
         }
 
         return {'parameter: [{name: terminology:OUTCOME, valueCode: terminology:NOT_SUBSUMED}]};
-    }    
+    }
 }
 
 isolated function isInParentChain(int targetAncestorId, ConceptNode currentNode) returns boolean {
@@ -638,7 +768,7 @@ isolated function getStoreConceptByCode(int codeSystemId, r4:code code) returns 
     //             cause = error("No matching Concept found"),
     //             httpStatusCode = http:STATUS_NOT_FOUND);
     // }
-    
+
     return getStoreConcept(sql:queryConcat(`SELECT * FROM `, escapeToQuery("concepts"), ` WHERE `, escapeToQuery("code"), ` = ${code} AND `, escapeToQuery("codesystemCodeSystemId"), ` = ${codeSystemId}`));
 }
 
@@ -676,11 +806,12 @@ isolated function getConceptNode(string code, int codeSystemId) returns ConceptN
     // ConceptNode[] conceptNodes = check from ConceptNode concept in sClient->/concepts(ConceptNode)
     //     where concept.code == code && concept.codesystemCodeSystemId == codeSystemId
     //     select concept;
-    
-    sql:ParameterizedQuery sqlQuery =  sql:queryConcat(escapeToQuery("code"), ` = ${code} AND `, escapeToQuery("codesystemCodeSystemId"), ` = ${codeSystemId}`);
+
+    sql:ParameterizedQuery sqlQuery = sql:queryConcat(escapeToQuery("code"), ` = ${code} AND `, escapeToQuery("codesystemCodeSystemId"), ` = ${codeSystemId}`);
     stream<ConceptNode, persist:Error?> conceptStream = sClient->/concepts(ConceptNode, whereClause = sqlQuery);
-    
-    ConceptNode[]|error dbConcepts = from ConceptNode concept in conceptStream select concept;
+
+    ConceptNode[]|error dbConcepts = from ConceptNode concept in conceptStream
+        select concept;
     if dbConcepts is error {
         return r4:createFHIRError(
                 "Error while searching for Concept, " + dbConcepts.message(),

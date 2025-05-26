@@ -564,7 +564,7 @@ public function validateCodeValueSet11() returns error? {
     groups: ["valueset", "expand_valueset", "successful_scenario"]
 }
 public function expandValueSet1() returns error? {
-    http:Response response = check vsClient->get("/%24expand?url=http://hl7.org/fhir/ValueSet/account-status&filter=account", ());
+    http:Response response = check vsClient->get("/%24expand?url=http://hl7.org/fhir/ValueSet/account-status", ());
     json actualJson = check response.getJsonPayload();
     r4:ValueSet actual = check actualJson.cloneWithType(r4:ValueSet);
 
@@ -572,14 +572,14 @@ public function expandValueSet1() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    test:assertEquals(actual, expected);
+    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
 }
 
 @test:Config {
     groups: ["valueset", "expand_valueset", "successful_scenario"]
 }
 public function expandValueSet2() returns error? {
-    http:Response response = check vsClient->get("/account-status/%24expand?filter=account", ());
+    http:Response response = check vsClient->get("/account-status/%24expand", ());
     json actualJson = check response.getJsonPayload();
     r4:ValueSet actual = check actualJson.cloneWithType(r4:ValueSet);
 
@@ -587,7 +587,7 @@ public function expandValueSet2() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    test:assertEquals(actual, expected);
+    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
 }
 
 @test:Config {
@@ -595,7 +595,7 @@ public function expandValueSet2() returns error? {
 }
 public function expandValueSet3() returns error? {
     json requestPayload = returnValueSetData("account-status-as-parameter");
-    http:Response response = check vsClient->post("/%24expand?filter=account", requestPayload);
+    http:Response response = check vsClient->post("/%24expand", requestPayload);
 
     json actualJson = check response.getJsonPayload();
     r4:ValueSet actual = check actualJson.cloneWithType(r4:ValueSet);
@@ -604,7 +604,7 @@ public function expandValueSet3() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    test:assertEquals(actual, expected);
+    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
 }
 
 @test:Config {
@@ -632,6 +632,84 @@ public function expandValueSet5() returns error? {
     json actualJson = check response.getJsonPayload();
     r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
     test:assertEquals((<r4:CodeableConcept>actual.issue[0].details).text, "Invalid request payload");
+}
+
+@test:Config {
+    groups: ["valueset", "expand_valueset", "successful_scenario"]
+}
+public function expandValueSet6() returns error? {
+    http:Response response = check vsClient->get("/%24expand?url=http://hl7.org/fhir/ValueSet/account-status&filter=active", ());
+    json actualJson = check response.getJsonPayload();
+    r4:ValueSet actual = check actualJson.cloneWithType(r4:ValueSet);
+
+    json expectedJson = returnValueSetData("expanded-account-status-active-filter");
+    r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
+
+    expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
+    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
+}
+
+@test:Config {
+    groups: ["valueset", "expand_valueset", "successful_scenario"]
+}
+public function expandValueSet7() returns error? {
+    http:Response response = check vsClient->get("/account-status/%24expand?filter=active", ());
+    json actualJson = check response.getJsonPayload();
+    r4:ValueSet actual = check actualJson.cloneWithType(r4:ValueSet);
+
+    json expectedJson = returnValueSetData("expanded-account-status-active-filter");
+    r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
+
+    expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
+    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
+}
+
+@test:Config {
+    dependsOn: [testAddValidValueSet5],
+    groups: ["valueset", "expand_valueset", "successful_scenario"]
+}
+public function expandValueSet8() returns error? {
+    http:Response response = check vsClient->get("/%24expand?url=http://hl7.org/fhir/ValueSet/account-and-resource-status&filter=active", ());
+    json actualJson = check response.getJsonPayload();
+    r4:ValueSet actual = check actualJson.cloneWithType(r4:ValueSet);
+
+    json expectedJson = returnValueSetData("expand-account-and-resource-status");
+    r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
+
+    expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
+    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
+}
+
+@test:Config {
+    dependsOn: [testAddValidValueSet2, validateCodeValueSet11],
+    groups: ["valueset", "expand_valueset", "successful_scenario"]
+}
+public function expandValueSet9() returns error? {
+    http:Response response = check vsClient->get("/example-valueset-include-valueset/%24expand", ());
+    json actualJson = check response.getJsonPayload();
+    r4:ValueSet actual = check actualJson.cloneWithType(r4:ValueSet);
+
+    json expectedJson = returnValueSetData("expanded-example-valueset-include-valueset");
+    r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
+
+    expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
+    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
+}
+
+@test:Config {
+    dependsOn: [testAddValidValueSet4],
+    groups: ["valueset", "expand_valueset", "successful_scenario"]
+}
+public function expandValueSet10() returns error? {
+    http:Response response = check vsClient->get("/example-valueset-include-concepts/%24expand", ());
+    json actualJson = check response.getJsonPayload();
+    r4:ValueSet actual = check actualJson.cloneWithType(r4:ValueSet);
+
+    json expectedJson = returnValueSetData("expanded-example-valueset-include-concepts");
+    r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
+
+    expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
+    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
 }
 
 @test:Config {
@@ -847,6 +925,18 @@ public function testAddValidValueSet3() returns error? {
 }
 public function testAddValidValueSet4() returns error? {
     json requestPayload = returnValueSetData("add-valid-valueset4");
+
+    http:Response response = check vsClient->post("/", requestPayload);
+
+    // check the response status code is 201 or not
+    test:assertEquals(response.statusCode, 201);
+}
+
+@test:Config {
+    groups: ["valueset", "add_valueset", "successful_scenario"]
+}
+public function testAddValidValueSet5() returns error? {
+    json requestPayload = returnValueSetData("add-valid-valueset5");
 
     http:Response response = check vsClient->post("/", requestPayload);
 

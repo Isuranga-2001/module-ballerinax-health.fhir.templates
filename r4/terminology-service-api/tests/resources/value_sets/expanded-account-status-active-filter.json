@@ -51,6 +51,21 @@
     ],
     "version": "4.0.1",
     "url": "http://hl7.org/fhir/ValueSet/account-status",
+    "expansion": {
+        "contains": [    
+            {
+                "code": "active",
+                "display": "Active"
+            },   
+            {
+                "code": "inactive",
+                "display": "Inactive"
+            }
+        ],
+        "total": 2,
+        "offset": 0,
+        "timestamp": "2025-05-26T06:46:23.683611600Z"
+    },
     "immutable": true,
     "compose": {
         "include": [
@@ -61,32 +76,5 @@
     },
     "name": "AccountStatus",
     "publisher": "HL7 (FHIR Project)",
-    "status": "draft",
-    "expansion": {
-        "contains": [
-            {
-                "code": "active",
-                "display": "Active"
-            },
-            {
-                "code": "entered-in-error",
-                "display": "Entered in error"
-            },
-            {
-                "code": "unknown",
-                "display": "Unknown"
-            },
-            {
-                "code": "on-hold",
-                "display": "On Hold"
-            },
-            {
-                "code": "inactive",
-                "display": "Inactive"
-            }
-        ],
-        "total": 5,
-        "offset": 0,
-        "timestamp": "2023-07-16T05:20:48.577708Z"
-    }
+    "status": "draft"
 }

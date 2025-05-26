@@ -79,7 +79,7 @@ public function readZipFileAsBytes(string fileName) returns byte[]|error {
 }
 
 isolated function addExampleDataToTestDB() returns error? {
-    string[] codeSystemList = ["http://hl7.org/fhir/account-status", "http://hl7.org/fhir/abstract-types"];
+    string[] codeSystemList = ["http://hl7.org/fhir/account-status", "http://hl7.org/fhir/abstract-types", "http://hl7.org/fhir/resource-status"];
     string[] valueSetList = ["http://hl7.org/fhir/ValueSet/abstract-types", "http://hl7.org/fhir/ValueSet/account-status"];
 
     foreach string item in codeSystemList {
