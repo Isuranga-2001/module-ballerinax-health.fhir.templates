@@ -158,6 +158,15 @@ public isolated class TerminologySource {
     }
 
     public isolated function isCodeSystemExist(r4:uri system, string version) returns boolean {
+        // TODO: Replace the manual query-based search operation below with the commented logic once the following persist issue is resolved:
+        // https://github.com/ballerina-platform/ballerina-library/issues/7920
+        //
+        // The recommended approach is:
+        // store:CodeSystem[] codeSystems = check from store:CodeSystem codesystem in sClient->/codesystems(store:CodeSystem)
+        //     where codesystem.url == system && codesystem.version == version
+        //     select codesystem;
+        // return codeSystems.length() > 0;
+
         sql:ParameterizedQuery sqlQuery = sql:queryConcat(`SELECT 1 FROM `, escapeToQuery("codesystems"), ` WHERE `, escapeToQuery("url"), ` = ${system} AND `, escapeToQuery("version"), ` = ${version} LIMIT 1`);
 
         stream<record {}, persist:Error?> resultStream = sClient->queryNativeSQL(sqlQuery);
@@ -168,6 +177,14 @@ public isolated class TerminologySource {
     }
 
     public isolated function isValueSetExist(r4:uri system, string version) returns boolean {
+        // TODO: Replace the manual query-based search operation below with the commented logic once the following persist issue is resolved:
+        // https://github.com/ballerina-platform/ballerina-library/issues/7920
+        //
+        // store:ValueSet[] valueSets = check from store:ValueSet valueSet in sClient->/valuesets(store:ValueSet)
+        //     where valueSet.url == system && valueSet.version == version
+        //     select valueSet;
+        // return valueSets.length() > 0;
+
         sql:ParameterizedQuery sqlQuery = sql:queryConcat(`SELECT 1 FROM `, escapeToQuery("valuesets"), ` WHERE `, escapeToQuery("url"), ` = ${system} AND `, escapeToQuery("version"), ` = ${version} LIMIT 1`);
 
         stream<record {}, persist:Error?> resultStream = sClient->queryNativeSQL(sqlQuery);
@@ -448,6 +465,22 @@ isolated function findConceptInCodeSystem(r4:uri system, r4:code code, string? v
 }
 
 isolated function getCodeSystemByID(string id, string? version = ()) returns r4:CodeSystem|error {
+    // TODO: Replace the manual query-based search operation below with the commented logic once the following persist issue is resolved:
+    // https://github.com/ballerina-platform/ballerina-library/issues/7920
+    //
+    // store:CodeSystem[] codeSystems;
+    // if version !is () {
+    //     codeSystems = check from store:CodeSystem codesystem in sClient->/codesystems(store:CodeSystem)
+    //         where codesystem.id == id && codesystem.'version == version
+    //         select codesystem;
+    // } else {
+    //     codeSystems = check from store:CodeSystem codesystem in sClient->/codesystems(store:CodeSystem)
+    //         where codesystem.id == id
+    //         order by codesystem.version descending
+    //         limit 1
+    //         select codesystem;
+    // }
+
     sql:ParameterizedQuery sqlQueryWhereClause = version is ()
         ? sql:queryConcat(escapeToQuery("id"), ` = ${id} ORDER BY `, escapeToQuery("version"), ` DESC LIMIT 1`)
         : sql:queryConcat(escapeToQuery("id"), ` = ${id} AND `, escapeToQuery("version"), ` = ${version}`);
@@ -474,6 +507,23 @@ isolated function getCodeSystemByURL(string system, string? version = ()) return
 }
 
 isolated function getStoreCodeSystemByURL(string system, string? version = ()) returns store:CodeSystem|error {
+    // TODO: Replace the manual query-based search operation below with the commented logic once the following persist issue is resolved:
+    // https://github.com/ballerina-platform/ballerina-library/issues/7920
+    //
+    // The recommended approach is:
+    // store:CodeSystem[] codeSystems;
+    // if version !is () {
+    //     codeSystems = check from store:CodeSystem codesystem in sClient->/codesystems(store:CodeSystem)
+    //         where codesystem.url == system && codesystem.version == version
+    //         select codesystem;
+    // } else {
+    //     codeSystems = check from store:CodeSystem codesystem in sClient->/codesystems(store:CodeSystem)
+    //         where codesystem.url == system
+    //         order by codesystem.version descending
+    //         limit 1
+    //         select codesystem;
+    // }
+
     sql:ParameterizedQuery sqlQueryWhereClause = version is ()
         ? sql:queryConcat(escapeToQuery("url"), ` = ${system} ORDER BY `, escapeToQuery("version"), ` DESC LIMIT 1`)
         : sql:queryConcat(escapeToQuery("url"), ` = ${system} AND `, escapeToQuery("version"), ` = ${version}`);
@@ -493,6 +543,22 @@ isolated function getStoreCodeSystemByURL(string system, string? version = ()) r
 }
 
 isolated function getValueSetByID(string id, string? version = ()) returns r4:ValueSet|error {
+    // TODO: Replace the manual query-based search operation below with the commented logic once the following persist issue is resolved:
+    // https://github.com/ballerina-platform/ballerina-library/issues/7920
+    //
+    // store:ValueSet[] valueSets;
+    // if version !is () {
+    //     valueSets = check from store:ValueSet valueSet in sClient->/valuesets(store:ValueSet)
+    //         where valueSet.id == id && valueSet.version == version
+    //         select valueSet;
+    // } else {
+    //     valueSets = check from store:ValueSet valueSet in sClient->/valuesets(store:ValueSet)
+    //         where valueSet.id == id
+    //         order by valueSet.version descending
+    //         limit 1
+    //         select valueSet;
+    // }
+
     sql:ParameterizedQuery sqlQueryWhereClause = version is ()
         ? sql:queryConcat(escapeToQuery("id"), ` = ${id} ORDER BY `, escapeToQuery("version"), ` DESC LIMIT 1`)
         : sql:queryConcat(escapeToQuery("id"), ` = ${id} AND `, escapeToQuery("version"), ` = ${version}`);
@@ -520,6 +586,22 @@ isolated function getValueSetByURL(string system, string? version = ()) returns 
 }
 
 isolated function getStoreValueSetByURL(string system, string? version = ()) returns store:ValueSet|error {
+    // TODO: Replace the manual query-based search operation below with the commented logic once the following persist issue is resolved:
+    // https://github.com/ballerina-platform/ballerina-library/issues/7920
+    //
+    // store:ValueSet[] valueSets;
+    // if version !is () {
+    //     valueSets = check from store:ValueSet valueSet in sClient->/valuesets(store:ValueSet)
+    //         where valueSet.url == system && valueSet.version == version
+    //         select valueSet;
+    // } else {
+    //     valueSets = check from store:ValueSet valueSet in sClient->/valuesets(store:ValueSet)
+    //         where valueSet.url == system
+    //         order by valueSet.version descending
+    //         limit 1
+    //         select valueSet;
+    // }
+
     sql:ParameterizedQuery sqlQueryWhereClause = version is ()
         ? sql:queryConcat(escapeToQuery("url"), ` = ${system} ORDER BY `, escapeToQuery("version"), ` DESC LIMIT 1`)
         : sql:queryConcat(escapeToQuery("url"), ` = ${system} AND `, escapeToQuery("version"), ` = ${version}`);
@@ -539,8 +621,25 @@ isolated function getStoreValueSetByURL(string system, string? version = ()) ret
 }
 
 isolated function getStoreConceptByCode(int codeSystemId, r4:code code) returns store:Concept|r4:FHIRError {
+    // TODO: Replace the manual query-based search operation below with the commented logic once the following persist issue is resolved:
+    // https://github.com/ballerina-platform/ballerina-library/issues/7920
+    //
+    // store:Concept[] concepts = check from store:Concept concept in sClient->/concepts(store:Concept)
+    //     where concept.code == code && concept.codesystemCodeSystemId == codeSystemId
+    //     select concept;
+    // 
+    // if concepts.length() > 0 {
+    //     return concepts[0];
+    // } else {
+    //     return r4:createFHIRError(
+    //             "Concept not found",
+    //             r4:ERROR,
+    //             r4:INVALID_REQUIRED,
+    //             cause = error("No matching Concept found"),
+    //             httpStatusCode = http:STATUS_NOT_FOUND);
+    // }
+    
     return getStoreConcept(sql:queryConcat(`SELECT * FROM `, escapeToQuery("concepts"), ` WHERE `, escapeToQuery("code"), ` = ${code} AND `, escapeToQuery("codesystemCodeSystemId"), ` = ${codeSystemId}`));
-
 }
 
 isolated function getStoreConcept(sql:ParameterizedQuery sqlQuery) returns store:Concept|r4:FHIRError {
@@ -570,6 +669,14 @@ isolated function getStoreConcept(sql:ParameterizedQuery sqlQuery) returns store
 }
 
 isolated function getConceptNode(string code, int codeSystemId) returns ConceptNode|r4:FHIRError {
+    // TODO: Replace the manual query-based search operation below with the commented logic once the following persist issue is resolved:
+    // https://github.com/ballerina-platform/ballerina-library/issues/7920
+    //
+    // The recommended approach is:
+    // ConceptNode[] conceptNodes = check from ConceptNode concept in sClient->/concepts(ConceptNode)
+    //     where concept.code == code && concept.codesystemCodeSystemId == codeSystemId
+    //     select concept;
+    
     sql:ParameterizedQuery sqlQuery =  sql:queryConcat(escapeToQuery("code"), ` = ${code} AND `, escapeToQuery("codesystemCodeSystemId"), ` = ${codeSystemId}`);
     stream<ConceptNode, persist:Error?> conceptStream = sClient->/concepts(ConceptNode, whereClause = sqlQuery);
     
