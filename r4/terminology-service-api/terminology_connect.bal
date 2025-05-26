@@ -1,3 +1,7 @@
+import terminology_service_api.loinc_to_fhir as loinc;
+
+import ballerina/data.jsondata;
+import ballerina/data.xmldata;
 import ballerina/http;
 import ballerina/regex;
 import ballerina/time;
@@ -5,20 +9,14 @@ import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
 
-// Constants
-final terminology:Terminology? terminology_source = ();
-final boolean IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED = terminology_source is terminology:Terminology;
+final TerminologySource terminology_source = new TerminologySource();
 
 public isolated function readCodeSystemById(string id) returns r4:FHIRError|r4:CodeSystem|r4:FHIRError {
     string[] split = regex:split(id, string `\|`);
     string code_system_id = split[0];
     string? code_system_id_version = split.length() > 1 ? split[1] : ();
 
-    if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-        return terminology:readCodeSystemById(id = code_system_id, version = code_system_id_version, terminology = terminology_source);
-    } else {
-        return terminology:readCodeSystemById(id = code_system_id, version = code_system_id_version);
-    }
+    return terminology:readCodeSystemById(id = code_system_id, version = code_system_id_version, terminology = terminology_source);
 }
 
 public isolated function readValueSetById(string id) returns r4:ValueSet|r4:FHIRError {
@@ -26,11 +24,7 @@ public isolated function readValueSetById(string id) returns r4:ValueSet|r4:FHIR
     string value_set_id = split[0];
     string? value_set_id_version = split.length() > 1 ? split[1] : ();
 
-    if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-        return terminology:readValueSetById(id = value_set_id, version = value_set_id_version, terminology = terminology_source);
-    } else {
-        return terminology:readValueSetById(id = value_set_id, version = value_set_id_version);
-    }
+    return terminology:readValueSetById(id = value_set_id, version = value_set_id_version, terminology = terminology_source);
 }
 
 public isolated function readCodeSystemByUrl(string url) returns r4:CodeSystem|r4:FHIRError {
@@ -38,11 +32,7 @@ public isolated function readCodeSystemByUrl(string url) returns r4:CodeSystem|r
     string code_system_url = split[0];
     string? code_system_url_version = split.length() > 1 ? split[1] : ();
 
-    if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-        return terminology:readCodeSystemByUrl(url = code_system_url, version = code_system_url_version, terminology = terminology_source);
-    } else {
-        return terminology:readCodeSystemByUrl(url = code_system_url, version = code_system_url_version);
-    }
+    return terminology:readCodeSystemByUrl(url = code_system_url, version = code_system_url_version, terminology = terminology_source);
 }
 
 public isolated function readValueSetByUrl(string url) returns r4:ValueSet|r4:FHIRError {
@@ -50,21 +40,14 @@ public isolated function readValueSetByUrl(string url) returns r4:ValueSet|r4:FH
     string value_set_url = split[0];
     string? value_set_url_version = split.length() > 1 ? split[1] : ();
 
-    if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-        return terminology:readValueSetByUrl(url = value_set_url, version = value_set_url_version, terminology = terminology_source);
-    } else {
-        return terminology:readValueSetByUrl(url = value_set_url, version = value_set_url_version);
-    }
+    return terminology:readValueSetByUrl(url = value_set_url, version = value_set_url_version, terminology = terminology_source);
 }
 
 public isolated function searchValueSet(http:Request request) returns r4:Bundle|r4:FHIRError {
     map<string[]> searchParams = request.getQueryParams();
     map<r4:RequestSearchParameter[]> params = prepareRequestSearchParameter(searchParams);
 
-    r4:ValueSet[] valueSets =
-        IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED ?
-        check terminology:searchValueSets(params, terminology = terminology_source) :
-        check terminology:searchValueSets(params);
+    r4:ValueSet[] valueSets = check terminology:searchValueSets(params, terminology = terminology_source);
 
     r4:BundleEntry[] entries = valueSets.'map(v => <r4:BundleEntry>{'resource: v, search: {mode: r4:MATCH}});
 
@@ -82,10 +65,7 @@ public isolated function searchCodeSystem(http:Request request) returns r4:Bundl
     map<string[]> searchParams = request.getQueryParams();
     map<r4:RequestSearchParameter[]> params = prepareRequestSearchParameter(searchParams);
 
-    r4:CodeSystem[] codeSystems =
-        IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED ?
-        check terminology:searchCodeSystems(params, terminology = terminology_source) :
-        check terminology:searchCodeSystems(params);
+    r4:CodeSystem[] codeSystems = check terminology:searchCodeSystems(params, terminology = terminology_source);
 
     r4:BundleEntry[] entries = codeSystems.'map(c => <r4:BundleEntry>{'resource: c.toJson(), search: {mode: r4:MATCH}});
 
@@ -106,18 +86,10 @@ public isolated function valueSetExpansionGet(http:Request request, string? id =
     r4:ValueSet valueSet = {status: "unknown"};
 
     if id is string {
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            valueSet = check terminology:valueSetExpansion(searchParameters, vs = check readValueSetById(id), terminology = terminology_source);
-        } else {
-            valueSet = check terminology:valueSetExpansion(searchParameters, vs = check readValueSetById(id));
-        }
+        valueSet = check terminology:valueSetExpansion(searchParameters, vs = check readValueSetById(id), terminology = terminology_source);
     } else {
         string|() system = request.getQueryParamValue("url") ?: ();
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            valueSet = check terminology:valueSetExpansion(searchParameters, system = system, terminology = terminology_source);
-        } else {
-            valueSet = check terminology:valueSetExpansion(searchParameters, system = system);
-        }
+        valueSet = check terminology:valueSetExpansion(searchParameters, system = system, terminology = terminology_source);
     }
 
     return valueSet;
@@ -129,11 +101,7 @@ public isolated function valueSetExpansionPost(http:Request request, string? id 
 
     r4:ValueSet valueSet = {status: "unknown"};
     if id is string {
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            valueSet = check terminology:valueSetExpansion(searchParameters, vs = check readValueSetById(id), terminology = terminology_source);
-        } else {
-            valueSet = check terminology:valueSetExpansion(searchParameters, vs = check readValueSetById(id));
-        }
+        valueSet = check terminology:valueSetExpansion(searchParameters, vs = check readValueSetById(id), terminology = terminology_source);
     } else {
         json|http:ClientError jsonPayload = request.getJsonPayload();
 
@@ -150,11 +118,7 @@ public isolated function valueSetExpansionPost(http:Request request, string? id 
                     }
                 }
 
-                if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-                    valueSet = check terminology:valueSetExpansion(searchParameters, vs = valueSet, terminology = terminology_source);
-                } else {
-                    valueSet = check terminology:valueSetExpansion(searchParameters, vs = valueSet);
-                }
+                valueSet = check terminology:valueSetExpansion(searchParameters, vs = valueSet, terminology = terminology_source);
             } else {
                 return r4:createFHIRError(
                         "Invalid request payload",
@@ -166,11 +130,7 @@ public isolated function valueSetExpansionPost(http:Request request, string? id 
         } else {
             string|() system = request.getQueryParamValue("url") ?: ();
 
-            if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-                valueSet = check terminology:valueSetExpansion(searchParameters, system = system, terminology = terminology_source);
-            } else {
-                valueSet = check terminology:valueSetExpansion(searchParameters, system = system);
-            }
+            valueSet = check terminology:valueSetExpansion(searchParameters, system = system, terminology = terminology_source);
         }
     }
     return valueSet;
@@ -189,6 +149,7 @@ public isolated function valueSetValidateCodeGet(http:Request request, string? i
 public isolated function codeSystemLookUpGet(http:RequestContext ctx, http:Request request, string? id = ()) returns international401:Parameters|r4:FHIRError {
     string? system = request.getQueryParamValue("system");
     string? codeValue = request.getQueryParamValue("code");
+    string? 'version = request.getQueryParamValue("version") ?: ();
 
     if codeValue !is r4:code|r4:Coding {
         return r4:createFHIRError(
@@ -201,17 +162,9 @@ public isolated function codeSystemLookUpGet(http:RequestContext ctx, http:Reque
     r4:CodeSystemConcept[]|r4:CodeSystemConcept result;
 
     if id is string {
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            result = check terminology:codeSystemLookUp(<r4:code>codeValue, system = (check readCodeSystemById(id)).url, terminology = terminology_source);
-        } else {
-            result = check terminology:codeSystemLookUp(<r4:code>codeValue, system = (check readCodeSystemById(id)).url);
-        }
+        result = check terminology:codeSystemLookUp(<r4:code>codeValue, system = (check readCodeSystemById(id)).url, version = 'version, terminology = terminology_source);
     } else if system is string {
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            result = check terminology:codeSystemLookUp(<r4:code>codeValue, system = system, terminology = terminology_source);
-        } else {
-            result = check terminology:codeSystemLookUp(<r4:code>codeValue, system = system);
-        }
+        result = check terminology:codeSystemLookUp(<r4:code>codeValue, system = system, version = 'version, terminology = terminology_source);
     } else {
         return r4:createFHIRError(
                 "Can not find a CodeSystem",
@@ -265,11 +218,7 @@ public isolated function codeSystemLookUpPost(http:RequestContext ctx, http:Requ
                 r4:INVALID_REQUIRED,
                 httpStatusCode = http:STATUS_BAD_REQUEST);
     } else if system is string {
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            result = check terminology:codeSystemLookUp(codingValue, system = system, terminology = terminology_source);
-        } else {
-            result = check terminology:codeSystemLookUp(codingValue, system = system);
-        }
+        result = check terminology:codeSystemLookUp(codingValue, system = system, terminology = terminology_source);
     } else {
         return r4:createFHIRError(
                 "Can not find a CodeSystem",
@@ -325,11 +274,7 @@ public isolated function valueSetLookUpPost(http:Request request) returns intern
     }
 
     if valueSet is r4:ValueSet && (codingValue is r4:Coding || codingValue is r4:CodeableConcept) {
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            return codesystemConceptsToParameters(check terminology:valueSetLookUp(codingValue, vs = valueSet, terminology = terminology_source));
-        } else {
-            return codesystemConceptsToParameters(check terminology:valueSetLookUp(codingValue, vs = valueSet));
-        }
+        return codesystemConceptsToParameters(check terminology:valueSetLookUp(codingValue, vs = valueSet, terminology = terminology_source));
     } else {
         return r4:createFHIRError(
                 "Invalid request payload",
@@ -353,17 +298,9 @@ public isolated function valueSetLookUpGet(http:Request request, string? id = ()
 
     r4:CodeSystemConcept[]|r4:CodeSystemConcept|r4:FHIRError result;
     if id is string {
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            result = terminology:valueSetLookUp(<r4:code>codeValue, vs = check readValueSetById(id), terminology = terminology_source);
-        } else {
-            result = terminology:valueSetLookUp(<r4:code>codeValue, vs = check readValueSetById(id));
-        }
+        result = terminology:valueSetLookUp(<r4:code>codeValue, vs = check readValueSetById(id), terminology = terminology_source);
     } else if system is string {
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            result = terminology:valueSetLookUp(<r4:code>codeValue, vs = check readValueSetByUrl(system), terminology = terminology_source);
-        } else {
-            result = terminology:valueSetLookUp(<r4:code>codeValue, vs = check readValueSetByUrl(system));
-        }
+        result = terminology:valueSetLookUp(<r4:code>codeValue, vs = check readValueSetByUrl(system), terminology = terminology_source);
     } else {
         return r4:createFHIRError(
                 "Can not find a ValueSet",
@@ -386,11 +323,9 @@ public isolated function subsumesGet(http:RequestContext ctx, http:Request reque
     r4:code? codeB = request.getQueryParamValue("codeB");
 
     if system is string && codeA is r4:code && codeB is r4:code {
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            return terminology:subsumes(codeA, codeB, system = system, version = 'version, terminology = terminology_source);
-        } else {
-            return terminology:subsumes(codeA, codeB, system = system, version = 'version);
-        }
+        // NOTE: replace the subsume function in terminology library by this subsume function
+        // because this implementation is more efficient than the one in terminology library
+        return terminology_source.subsumes(codeA = codeA, codeB = codeB, system = system, version = 'version);
     } else {
         return r4:createFHIRError(
                 "Missing required input parameters",
@@ -440,11 +375,9 @@ public isolated function subsumesPost(http:RequestContext ctx, http:Request requ
     }
 
     if system is string && codingA is r4:Coding && codingB is r4:Coding {
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            return terminology:subsumes(codingA, codingB, system = system, version = 'version, terminology = terminology_source);
-        } else {
-            return terminology:subsumes(codingA, codingB, system = system, version = 'version);
-        }
+        // NOTE: replace the subsume function in terminology library by this subsume function
+        // because this implementation is more efficient than the one in terminology library
+        return terminology_source.subsumes(codeA = <r4:code>codingA.code, codeB = <r4:code>codingB.code, system = system, version = 'version);
     } else {
         return r4:createFHIRError(
                 "Missing required input parameters",
@@ -532,62 +465,6 @@ public isolated function batchValidateValueSets(http:Request request) returns r4
     };
 }
 
-public isolated function addValueSet(http:Request valueSetPayload) returns r4:FHIRError? {
-    // check whether the payload is a valid FHIR ValueSet
-    json|error jsonPayload = valueSetPayload.getJsonPayload();
-    if jsonPayload is json {
-        r4:ValueSet|error valueSet = jsonPayload.cloneWithType(r4:ValueSet);
-        if valueSet is error {
-            return r4:createFHIRError(
-                    "Invalid request payload",
-                    r4:ERROR,
-                    r4:INVALID_REQUIRED,
-                    cause = valueSet,
-                    httpStatusCode = http:STATUS_BAD_REQUEST);
-        }
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            return terminology:addValueSet(valueSet, terminology = terminology_source);
-        } else {
-            return terminology:addValueSet(valueSet);
-        }
-    } else {
-        return r4:createFHIRError(
-                "Invalid or empty request payload",
-                r4:ERROR,
-                r4:INVALID_REQUIRED,
-                cause = jsonPayload,
-                httpStatusCode = http:STATUS_BAD_REQUEST);
-    }
-}
-
-public isolated function addCodeSystem(http:Request codeSystemPayload) returns r4:FHIRError? {
-    // Check whether the payload is a valid FHIR CodeSystem
-    json|error jsonPayload = codeSystemPayload.getJsonPayload();
-    if jsonPayload is json {
-        r4:CodeSystem|error codeSystem = jsonPayload.cloneWithType(r4:CodeSystem);
-        if codeSystem is error {
-            return r4:createFHIRError(
-                    "Invalid request payload",
-                    r4:ERROR,
-                    r4:INVALID_REQUIRED,
-                    cause = codeSystem,
-                    httpStatusCode = http:STATUS_BAD_REQUEST);
-        }
-        if IS_EXTERNAL_TERMINOLOGY_SOURCE_ENABLED {
-            return terminology:addCodeSystem(codeSystem, terminology = terminology_source);
-        } else {
-            return terminology:addCodeSystem(codeSystem);
-        }
-    } else {
-        return r4:createFHIRError(
-                "Invalid or empty request payload",
-                r4:ERROR,
-                r4:INVALID_REQUIRED,
-                cause = jsonPayload,
-                httpStatusCode = http:STATUS_BAD_REQUEST);
-    }
-}
-
 isolated function getSystemAndCode(string input) returns map<string> {
     // Split the string at '?' to separate the base URL and query parameters
     string[] parts = regex:split(input, string `\?`);
@@ -617,4 +494,206 @@ isolated function getSystemAndCode(string input) returns map<string> {
     }
 
     return {"system": system, "code": code};
+}
+
+public isolated function addCodeSystem(http:Request req) returns r4:FHIRError? {
+    do {
+        string contentType = req.getContentType();
+        r4:CodeSystem codeSystem;
+
+        // for JSON content
+        if contentType == "application/json" {
+            ParseCodeSystem parsedCodeSystem = check jsondata:parseStream(check req.getByteStream());
+
+            if parsedCodeSystem.content is () || parsedCodeSystem.status is () {
+                return r4:createFHIRError(
+                        "Invalid request payload",
+                        r4:ERROR,
+                        r4:INVALID_REQUIRED,
+                        httpStatusCode = http:STATUS_BAD_REQUEST);
+            }
+
+            codeSystem = parseCodeSystemToR4CodeSystem(parsedCodeSystem);
+        }
+
+        // for XML content
+        else if contentType == "application/xml" {
+            XMLCodeSystem parsedCodeSystem = check xmldata:parseStream(check req.getByteStream());
+
+            if parsedCodeSystem.content is () || parsedCodeSystem.status is () {
+                return r4:createFHIRError(
+                        "Invalid request payload",
+                        r4:ERROR,
+                        r4:INVALID_REQUIRED,
+                        httpStatusCode = http:STATUS_BAD_REQUEST);
+            }
+
+            codeSystem = xmlCodeSystemToR4CodeSystem(parsedCodeSystem);
+        }
+
+        // for zip
+        else if contentType == "application/zip" {
+            string path = req.getQueryParamValue("target-path") ?: "";
+            string dirPath = createNewTempDirectory();
+
+            check saveCompressedPayload(check req.getByteStream(), dirPath);
+            check extractZipFile(dirPath);
+
+            json[] codeSystems = check readFilesAsJsons(dirPath + ZIP_FILE_EXTRACTION_PATH + (path != "" ? "/" + path : ""));
+
+            _ = terminology:addCodeSystemsAsJson(codeSystems, terminology = terminology_source);
+
+            _ = start removeDirectory(dirPath);
+            return;
+        }
+
+        // not supported
+        else {
+            return r4:createFHIRError(
+                    "Invalid request payload, content type is not supported",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    httpStatusCode = http:STATUS_BAD_REQUEST);
+        }
+
+        return terminology:addCodeSystem(codeSystem, terminology = terminology_source);
+
+    } on fail var e {
+        return r4:createFHIRError(
+                "Invalid request payload, " + e.message(),
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                cause = e,
+                httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+    }
+}
+
+public isolated function addValueSet(http:Request req) returns r4:FHIRError? {
+    do {
+        string contentType = req.getContentType();
+
+        // for JSON content
+        if contentType == "application/json" {
+            stream<byte[], error?> payloadStream = check req.getByteStream();
+            ParseValueSet parseValueSet = check jsondata:parseStream(s = payloadStream);
+            if parseValueSet.status is () {
+                return r4:createFHIRError(
+                        "Invalid request payload",
+                        r4:ERROR,
+                        r4:INVALID_REQUIRED,
+                        httpStatusCode = http:STATUS_BAD_REQUEST);
+            }
+
+            r4:ValueSet valueSet = parseValueSetToR4ValueSet(parseValueSet);
+
+            return terminology:addValueSet(valueSet, terminology = terminology_source);
+        }
+
+        // for zip
+        else if contentType == "application/zip" {
+            string path = req.getQueryParamValue("target-path") ?: "";
+            string dirPath = createNewTempDirectory();
+
+            check saveCompressedPayload(check req.getByteStream(), dirPath);
+            check extractZipFile(dirPath);
+
+            json[] codeSystems = check readFilesAsJsons(dirPath + ZIP_FILE_EXTRACTION_PATH + (path != "" ? "/" + path : ""));
+
+            _ = terminology:addValueSetsAsJson(codeSystems, terminology = terminology_source);
+
+            _ = start removeDirectory(dirPath);
+            return;
+        }
+
+        // not supported
+        else {
+            return r4:createFHIRError(
+                    "Invalid request payload, content type is not supported",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    httpStatusCode = http:STATUS_BAD_REQUEST);
+        }
+    } on fail var e {
+        return r4:createFHIRError(
+                "Invalid request payload, "  + e.message(),
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                cause = e,
+                httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+    }
+}
+
+public isolated function upload(http:Request payload) returns r4:FHIRError? {
+    if payload.getContentType() != "application/zip" {
+        return r4:createFHIRError(
+                "Invalid request payload, content type is not supported",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                diagnostic = "The request payload should be a zip file",
+                httpStatusCode = http:STATUS_BAD_REQUEST);
+    }
+
+    do {
+        string|error typeHeader = payload.getHeader(TYPE_HEADER);
+
+        if typeHeader is error {
+            return r4:createFHIRError(
+                    string `Missing ${TYPE_HEADER} header in the request`,
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    diagnostic = string `The request should contains ${TYPE_HEADER} header and supported values are: FHIR, LOINC and SNOMED`,
+                    httpStatusCode = http:STATUS_BAD_REQUEST);
+        }
+        else if typeHeader != "FHIR" && typeHeader != "LOINC" && typeHeader != "SNOMED" {
+            return r4:createFHIRError(
+                    string `Invalid ${TYPE_HEADER} header value`,
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    diagnostic = string `The request should contains ${TYPE_HEADER} header and supported values are: FHIR, LOINC and SNOMED`,
+                    httpStatusCode = http:STATUS_BAD_REQUEST);
+        } else if typeHeader == "SNOMED" {
+            // TODO: create a module for convert SNOMED to FHIR
+            return r4:createFHIRError(
+                    "SNOMED upload is not implemented yet",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    httpStatusCode = http:STATUS_NOT_IMPLEMENTED);
+        }
+
+        string dirPath = createNewTempDirectory();
+
+        check saveCompressedPayload(check payload.getByteStream(), dirPath);
+        check extractZipFile(dirPath);
+
+        r4:FHIRError? result = ();
+
+        // standard FHIR
+        if typeHeader == "FHIR" {
+            CodeSystemValueSetJson jsonArrays = check readFilesForUpload(dirPath + ZIP_FILE_EXTRACTION_PATH);
+
+            _ = terminology:addCodeSystemsAsJson(jsonArrays.codeSystems, terminology = terminology_source);
+            _ = terminology:addValueSetsAsJson(jsonArrays.valueSets, terminology = terminology_source);
+        }
+
+        // LOINC
+        else if typeHeader == "LOINC" {
+            string? version = payload.getQueryParamValue("loinc-version");
+            check loinc:convert(dirPath + ZIP_FILE_EXTRACTION_PATH, version);
+
+            r4:CodeSystem codeSystem = check readFileJsonAndReturnCodeSystem(dirPath + ZIP_FILE_EXTRACTION_PATH + loinc:FHIR_LOINC_FILE_NAME);
+
+            result = terminology:addCodeSystem(codeSystem, terminology = terminology_source);
+        }
+
+        _ = start removeDirectory(dirPath);
+
+        return result;
+    } on fail var e {
+        return r4:createFHIRError(
+                "Invalid request payload, " + e.message(),
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                cause = e,
+                httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+    }
 }

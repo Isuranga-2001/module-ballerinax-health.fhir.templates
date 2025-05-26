@@ -1,12 +1,30 @@
+import terminology_service_api.store;
+
 import ballerina/http;
 import ballerina/test;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
 
-http:Client baseClient = check new ("http://localhost:9090/fhir/r4");
-http:Client csClient = check new ("http://localhost:9090/fhir/r4/CodeSystem");
-http:Client vsClient = check new ("http://localhost:9090/fhir/r4/ValueSet");
+http:Client baseClient = check new ("http://localhost:9089/fhir/r4");
+http:Client csClient = check new ("http://localhost:9089/fhir/r4/CodeSystem");
+http:Client vsClient = check new ("http://localhost:9089/fhir/r4/ValueSet");
+
+@test:BeforeSuite
+isolated function beforeSuite() returns error? {
+    check store:setupTestDB();
+    check addExampleDataToTestDB();
+}
+
+@test:AfterSuite
+function afterSuite() returns error? {
+    check store:cleanupTestDB();
+}
+
+@test:Mock {functionName: "initializeClient"}
+isolated function getMockClient() returns store:Client|error {
+    return test:mock(store:Client, check new store:H2Client("jdbc:h2:./tests/test", "sa", ""));
+}
 
 @test:Config {
     groups: ["codesystem", "get_by_id_codesystem", "successful_scenario"]
@@ -14,8 +32,9 @@ http:Client vsClient = check new ("http://localhost:9090/fhir/r4/ValueSet");
 public function getByIdCodeSystem1() returns error? {
     http:Response response = check csClient->get("/account-status");
 
-    json expected = returnCodeSystemData("account-status");
-    test:assertEquals(response.getJsonPayload(), expected);
+    r4:CodeSystem expected = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
+    expected.concept = ();
+    test:assertEquals(response.getJsonPayload(), expected.toJson());
 }
 
 @test:Config {
@@ -24,8 +43,17 @@ public function getByIdCodeSystem1() returns error? {
 public function getByIdCodeSystem2() returns error? {
     http:Response response = check csClient->get("/account-status%7C4.0.1");
 
-    json expected = returnCodeSystemData("account-status");
-    test:assertEquals(response.getJsonPayload(), expected);
+    r4:CodeSystem expected = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
+    expected.concept = ();
+    test:assertEquals(response.getJsonPayload(), expected.toJson());
+}
+
+@test:Config {
+    groups: ["codesystem", "get_by_id_codesystem", "failure_scenario"]
+}
+public function getByIdCodeSystem3() returns error? {
+    http:Response response = check csClient->get("/loinc");
+    test:assertEquals(response.statusCode, 404);
 }
 
 @test:Config {
@@ -33,12 +61,20 @@ public function getByIdCodeSystem2() returns error? {
 }
 public function searchCodeSystem1() returns error? {
     http:Response response = check csClient->get("?url=http://hl7.org/fhir/account-status");
+    
     json actualJson = check response.getJsonPayload();
     r4:Bundle actual = check actualJson.cloneWithType(r4:Bundle);
-
-    r4:Bundle expected = check returnCodeSystemData("account-status-bundle").cloneWithType(r4:Bundle);
+    
+    r4:Bundle expected = check returnCodeSystemData("empty-bundle").cloneWithType(r4:Bundle);
+    r4:CodeSystem codeSystem = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
+    codeSystem.concept = ();
+    r4:BundleEntry entry = {
+        'resource: codeSystem,
+        search: {mode: "match"}
+    };
+    expected.entry = [entry];
+    expected.total = 1;
     expected.meta.lastUpdated = actual.meta.lastUpdated;
-    expected.'type = r4:BUNDLE_TYPE_SEARCHSET;
 
     test:assertEquals(actual.toJson(), expected.toJson());
 }
@@ -48,10 +84,33 @@ public function searchCodeSystem1() returns error? {
 }
 public function searchCodeSystem2() returns error? {
     http:Response response = check csClient->get("?url=http://hl7.org/fhir/account-status&version=4.0.1&title=AccountStatus&status=draft&count=10&offset=0&name=AccountStatus&publisher=HL7%20%28FHIR%20Project%29");
+    
+    json actualJson = check response.getJsonPayload();
+    r4:Bundle actual = check actualJson.cloneWithType(r4:Bundle);
+    
+    r4:Bundle expected = check returnCodeSystemData("empty-bundle").cloneWithType(r4:Bundle);
+    r4:CodeSystem codeSystem = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
+    codeSystem.concept = ();
+    r4:BundleEntry entry = {
+        'resource: codeSystem,
+        search: {mode: "match"}
+    };
+    expected.entry = [entry];
+    expected.total = 1;
+    expected.meta.lastUpdated = actual.meta.lastUpdated;
+
+    test:assertEquals(actual.toJson(), expected.toJson());
+}
+
+@test:Config {
+    groups: ["codesystem", "get_by_id_codesystem", "failure_scenario"]
+}
+public function searchCodeSystem3() returns error? {
+    http:Response response = check csClient->get("?url=www.loinc.org");
     json actualJson = check response.getJsonPayload();
     r4:Bundle actual = check actualJson.cloneWithType(r4:Bundle);
 
-    r4:Bundle expected = check returnCodeSystemData("account-status-bundle").cloneWithType(r4:Bundle);
+    r4:Bundle expected = check returnCodeSystemData("empty-bundle").cloneWithType(r4:Bundle);
     expected.meta.lastUpdated = actual.meta.lastUpdated;
 
     test:assertEquals(actual.toJson(), expected.toJson());
@@ -83,8 +142,8 @@ public function lookupCodeSystem2() returns error? {
     groups: ["codesystem", "lookup_codesystem", "successful_scenario"]
 }
 public function lookupCodeSystem3() returns error? {
-    r4:Coding|r4:FHIRError coding = terminology:createCoding("http://hl7.org/fhir/account-status", "inactive");
-    international401:Parameters p = {'parameter: [{name: "coding", valueCoding: check coding}]} ;
+    r4:Coding|r4:FHIRError coding = terminology:createCoding("http://hl7.org/fhir/account-status", "inactive", terminology = terminology_source);
+    international401:Parameters p = {'parameter: [{name: "coding", valueCoding: check coding}]};
     http:Response response = check csClient->post("/%24lookup", p);
     json actual = check response.getJsonPayload();
 
@@ -157,7 +216,7 @@ public function lookupCodeSystem8() returns error? {
     groups: ["codesystem", "lookup_codesystem", "failure_scenario"]
 }
 public function lookupCodeSystem9() returns error? {
-    international401:Parameters parameters = {'parameter: [{name: "sample"}]} ;
+    international401:Parameters parameters = {'parameter: [{name: "sample"}]};
     http:Response response = check csClient->post("/%24lookup", parameters);
     json actualJson = check response.getJsonPayload();
     r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
@@ -168,7 +227,7 @@ public function lookupCodeSystem9() returns error? {
     groups: ["codesystem", "lookup_codesystem", "failure_scenario"]
 }
 public function lookupCodeSystem10() returns error? {
-    r4:Coding coding = check terminology:createCoding("http://hl7.org/fhir/account-status", "inactive");
+    r4:Coding coding = check terminology:createCoding("http://hl7.org/fhir/account-status", "inactive", terminology = terminology_source);
     coding.system = ();
     international401:Parameters parameters = {'parameter: [{name: "coding", valueCoding: coding}]};
     http:Response response = check csClient->post("/%24lookup", parameters);
@@ -204,8 +263,8 @@ public function subsumeCodeSystem2() returns error? {
 }
 public function subsumeCodeSystem3() returns error? {
 
-    r4:Coding codingA = check terminology:createCoding("http://hl7.org/fhir/account-status", "inactive");
-    r4:Coding codingB = check terminology:createCoding("http://hl7.org/fhir/account-status", "inactive");
+    r4:Coding codingA = check terminology:createCoding("http://hl7.org/fhir/account-status", "inactive", terminology = terminology_source);
+    r4:Coding codingB = check terminology:createCoding("http://hl7.org/fhir/account-status", "inactive", terminology = terminology_source);
 
     international401:ParametersParameter cA = {name: "codingA", valueCoding: codingA};
     international401:ParametersParameter cB = {name: "codingB", valueCoding: codingB};
@@ -262,6 +321,74 @@ public function subsumeCodeSystem7() returns error? {
     test:assertEquals((<r4:CodeableConcept>actual.issue[0].details).text, "Empty request payload or invalid json format");
 }
 
+@test:Config {
+    dependsOn: [testAddValidCodeSystemJson],
+    groups: ["codesystem", "subsume_codesystem", "successful_scenario"]
+}
+public function subsumeCodeSystem8() returns error? {
+    http:Response response = check csClient->get("/%24subsumes?codeA=2133-7&codeB=2135-2&system=urn:oid:2.16.840.1.113883.6.238");
+    json actual = check response.getJsonPayload();
+
+    json expected = returnCodeSystemData("subsumed");
+    test:assertEquals(actual, expected);
+}
+
+@test:Config {
+    dependsOn: [testAddValidCodeSystemJson],
+    groups: ["codesystem", "subsume_codesystem", "successful_scenario"]
+}
+public function subsumeCodeSystem9() returns error? {
+    http:Response response = check csClient->get("/%24subsumes?codeA=2186-5&codeB=2133-7&system=urn:oid:2.16.840.1.113883.6.238");
+    json actual = check response.getJsonPayload();
+
+    json expected = returnCodeSystemData("subsumed-by");
+    test:assertEquals(actual, expected);
+}
+
+@test:Config {
+    dependsOn: [testAddValidCodeSystemJson],
+    groups: ["codesystem", "subsume_codesystem", "successful_scenario"]
+}
+public function subsumeCodeSystem10() returns error? {
+    http:Response response = check csClient->get("/%24subsumes?codeA=2155-0&codeB=2133-7&system=urn:oid:2.16.840.1.113883.6.238");
+    json actual = check response.getJsonPayload();
+
+    json expected = returnCodeSystemData("subsumed-by");
+    test:assertEquals(actual, expected);
+}
+
+@test:Config {
+    dependsOn: [testAddValidCodeSystemJson],
+    groups: ["codesystem", "subsume_codesystem", "successful_scenario"]
+}
+public function subsumeCodeSystem11() returns error? {
+    http:Response response = check csClient->get("/%24subsumes?codeA=2155-0&codeB=1000-9&system=urn:oid:2.16.840.1.113883.6.238");
+    json actual = check response.getJsonPayload();
+
+    json expected = returnCodeSystemData("subsume-notequal");
+    test:assertEquals(actual, expected);
+}
+
+@test:Config {
+    dependsOn: [testAddValidCodeSystemJson],
+    groups: ["codesystem", "subsume_codesystem", "successful_scenario"]
+}
+public function subsumeCodeSystem12() returns error? {
+    r4:Coding codingA = check terminology:createCoding("urn:oid:2.16.840.1.113883.6.238", "2133-7", terminology = terminology_source);
+    r4:Coding codingB = check terminology:createCoding("urn:oid:2.16.840.1.113883.6.238", "2135-2", terminology = terminology_source);
+
+    international401:ParametersParameter cA = {name: "codingA", valueCoding: codingA};
+    international401:ParametersParameter cB = {name: "codingB", valueCoding: codingB};
+    international401:ParametersParameter system = {name: "system", valueUri: "urn:oid:2.16.840.1.113883.6.238"};
+    international401:Parameters requestPayload = {'parameter: [cA, cB, system]};
+
+    http:Response response = check csClient->post("/%24subsumes", requestPayload);
+    json actual = check response.getJsonPayload();
+
+    json expected = returnCodeSystemData("subsumed");
+    test:assertEquals(actual, expected);
+}
+
 // ===========================Value set======================================
 
 @test:Config {
@@ -282,6 +409,14 @@ public function getByIdValueSet2() returns error? {
 
     json expected = returnValueSetData("account-status");
     test:assertEquals(response.getJsonPayload(), expected);
+}
+
+@test:Config {
+    groups: ["valueSet", "get_by_id_valueSet", "failure_scenario"]
+}
+public function getByIdValueSet3() returns error? {
+    http:Response response = check vsClient->get("/all-loinc");
+    test:assertEquals(response.statusCode, 404);
 }
 
 @test:Config {
@@ -399,6 +534,30 @@ public function validateCodeValueSet9() returns error? {
     r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
 
     test:assertEquals((<r4:CodeableConcept>actual.issue[0].details).text, "Can not find a ValueSet, Code value is missing");
+}
+
+@test:Config {
+    dependsOn: [testAddValidValueSet2],
+    groups: ["valueset", "validate_code_valueset", "successful_scenario"]
+}
+public function validateCodeValueSet10() returns error? {
+    http:Response response = check vsClient->get("/example-valueset-include-valueset/%24validate-code?code=inactive", ());
+    json actual = check response.getJsonPayload();
+
+    json expected = returnValueSetData("validate-code");
+    test:assertEquals(actual, expected);
+}
+
+@test:Config {
+    dependsOn: [testAddValidValueSet4],
+    groups: ["valueset", "validate_code_valueset", "successful_scenario"]
+}
+public function validateCodeValueSet11() returns error? {
+    http:Response response = check vsClient->get("/example-valueset-include-concepts/%24validate-code?code=inactive", ());
+    json actual = check response.getJsonPayload();
+
+    json expected = returnValueSetData("validate-code");
+    test:assertEquals(actual, expected);
 }
 
 @test:Config {
@@ -576,8 +735,20 @@ public function testBatchValidateValueSetsNoEntries() returns error? {
 @test:Config {
     groups: ["codesystem", "add_codesystem", "successful_scenario"]
 }
-public function testAddValidCodeSystem() returns error? {
+public function testAddValidCodeSystemJson() returns error? {
     json requestPayload = returnCodeSystemData("add-valid-codesystem");
+
+    http:Response response = check csClient->post("/", requestPayload);
+
+    // check the response status code is 201 or not
+    test:assertEquals(response.statusCode, 201);
+}
+
+@test:Config {
+    groups: ["codesystem", "add_codesystem", "successful_scenario"]
+}
+public function testAddValidCodeSystemXml() returns error? {
+    xml requestPayload = returnCodeSystemDataXml("add-valid-codesystem");
 
     http:Response response = check csClient->post("/", requestPayload);
 
@@ -588,8 +759,25 @@ public function testAddValidCodeSystem() returns error? {
 @test:Config {
     groups: ["codesystem", "add_codesystem", "failure_scenario"]
 }
-public function testAddInvalidCodeSystem() returns error? {
+public function testAddInvalidCodeSystemJson() returns error? {
     json codingJson = returnCodeSystemData("add-invalid-codesystem");
+    http:Response response = check csClient->post("/", codingJson);
+
+    json actualJson = check response.getJsonPayload();
+    r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
+
+    json expectedjson = returnCodeSystemData("add-invalid-codesystem-response");
+    r4:OperationOutcome expected = check expectedjson.cloneWithType(r4:OperationOutcome);
+
+    expected.issue[0].diagnostics = (<r4:OperationOutcomeIssue[]>actual.issue)[0].diagnostics;
+    test:assertEquals(actual, expected);
+}
+
+@test:Config {
+    groups: ["codesystem", "add_codesystem", "failure_scenario"]
+}
+public function testAddInvalidCodeSystemXml() returns error? {
+    xml codingJson = returnCodeSystemDataXml("add-invalid-codesystem");
     http:Response response = check csClient->post("/", codingJson);
 
     json actualJson = check response.getJsonPayload();
@@ -631,6 +819,42 @@ public function testAddValidValueSet() returns error? {
 }
 
 @test:Config {
+    groups: ["valueset", "add_valueset", "successful_scenario"]
+}
+public function testAddValidValueSet2() returns error? {
+    json requestPayload = returnValueSetData("add-valid-valueset2");
+
+    http:Response response = check vsClient->post("/", requestPayload);
+
+    // check the response status code is 201 or not
+    test:assertEquals(response.statusCode, 201);
+}
+
+@test:Config {
+    groups: ["valueset", "add_valueset", "successful_scenario"]
+}
+public function testAddValidValueSet3() returns error? {
+    json requestPayload = returnValueSetData("add-valid-valueset3");
+
+    http:Response response = check vsClient->post("/", requestPayload);
+
+    // check the response status code is 201 or not
+    test:assertEquals(response.statusCode, 201);
+}
+
+@test:Config {
+    groups: ["valueset", "add_valueset", "successful_scenario"]
+}
+public function testAddValidValueSet4() returns error? {
+    json requestPayload = returnValueSetData("add-valid-valueset4");
+
+    http:Response response = check vsClient->post("/", requestPayload);
+
+    // check the response status code is 201 or not
+    test:assertEquals(response.statusCode, 201);
+}
+
+@test:Config {
     groups: ["valueset", "add_valueset", "failure_scenario"]
 }
 public function testAddInvalidValueSet() returns error? {
@@ -661,4 +885,87 @@ public function testAddEmptyValueSetPayload() returns error? {
 
     expected.issue[0].diagnostics = (<r4:OperationOutcomeIssue[]>actual.issue)[0].diagnostics;
     test:assertEquals(actual, expected);
+}
+
+@test:Config {
+    groups: ["upload", "successful_scenario"]
+}
+public function testUpload1() returns error? {
+    byte[] zipBytes = check readZipFileAsBytes("test.zip");
+
+    http:Request req = new;
+    req.setPayload(zipBytes, contentType = "application/zip");
+    req.setHeader(TYPE_HEADER, "FHIR");
+
+    http:Response response = check baseClient->post("/upload?target-path=hl7.terminology.r4/package", req);
+    test:assertEquals(response.statusCode, 201);
+}
+
+@test:Config {
+    groups: ["upload", "failure_scenario"]
+}
+public function testUpload2() returns error? {
+    http:Request req = new;
+    req.setPayload({}, contentType = "application/json");
+    req.setHeader(TYPE_HEADER, "FHIR");
+
+    http:Response response = check baseClient->post("/upload?target-path=hl7.terminology.r4/package", req);
+    test:assertEquals(response.statusCode, 400);
+}
+
+@test:Config {
+    groups: ["upload", "failure_scenario"]
+}
+public function testUpload3() returns error? {
+    http:Request req = new;
+    req.setPayload({}, contentType = "application/zip");
+
+    // send without the header
+    http:Response response1 = check baseClient->post("/upload", req);
+    test:assertEquals(response1.statusCode, 400);
+
+    // send with invalid header
+    req.setHeader(TYPE_HEADER, "invalid");
+    http:Response response2 = check baseClient->post("/upload", req);
+    test:assertEquals(response2.statusCode, 400);
+}
+
+@test:Config {
+    groups: ["upload", "successful_scenario", "loinc"]
+}
+public function testUploadLoinc() returns error? {
+    byte[] zipBytes = check readZipFileAsBytes("loinc.zip");
+
+    http:Request req = new;
+    req.setPayload(zipBytes, contentType = "application/zip");
+    req.setHeader(TYPE_HEADER, "LOINC");
+
+    http:Response response = check baseClient->post("/upload?loinc-version=2.80", req);
+    test:assertEquals(response.statusCode, 201);
+}
+
+@test:Config {
+    groups: ["upload", "codesystem", "add_codesystem", "successful_scenario"]
+}
+public function testUploadCodeSystem() returns error? {
+    byte[] zipBytes = check readZipFileAsBytes("codesystem.zip");
+
+    http:Request req = new;
+    req.setPayload(zipBytes, contentType = "application/zip");
+
+    http:Response response = check csClient->post("/", req);
+    test:assertEquals(response.statusCode, 201);
+}
+
+@test:Config {
+    groups: ["upload", "valueset", "add_valueset_zip", "successful_scenario"]
+}
+public function testUploadValueSet() returns error? {
+    byte[] zipBytes = check readZipFileAsBytes("valueset.zip");
+
+    http:Request req = new;
+    req.setPayload(zipBytes, contentType = "application/zip");
+
+    http:Response response = check vsClient->post("/", req);
+    test:assertEquals(response.statusCode, 201);
 }

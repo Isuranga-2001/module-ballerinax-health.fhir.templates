@@ -1,10 +1,8 @@
-//Congifurations
-public final string DB_NAME = "terminology";
-public final boolean IS_DB_CONNECTED = false;
-
 //Constants
-public string TABLE_NAME = "";
-public final string TABLE_NAME_CODESYSTEM = "code_system";
-public final string TABLE_NAME_CONCEPT = "concept";
-public final string TABLE_NAME_VALUESET = "value_set";
-public final string TYPE_HEADER = "x-terminology-type";
+final string TYPE_HEADER = "x-terminology-type";
+final string ZIP_FILE_NAME = "/terminology.zip";
+final string ZIP_FILE_EXTRACTION_PATH = "/extracted";
+final string FHIR_PACKAGE_PATH = "/hl7.terminology.r4/package";
+final string TEMPORARY_FILES_DIRECTORY_NAME = "temp_files";
+
+configurable string db_type = "postgresql";

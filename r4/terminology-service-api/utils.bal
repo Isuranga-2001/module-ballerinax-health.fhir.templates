@@ -1,5 +1,22 @@
+import ballerina/file;
+import ballerina/io;
+import ballerina/regex;
+import ballerina/sql;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
+import ballerinax/health.fhir.r4.parser;
+
+import ballerinacentral/zip;
+
+// Module-level counter for unique file naming
+isolated int fileCount = 0;
+
+isolated function createNewTempDirectory() returns string {
+    lock {
+        fileCount = fileCount + 1;
+        return TEMPORARY_FILES_DIRECTORY_NAME + "/payload_" + fileCount.toString();
+    }
+}
 
 isolated function validationResultToParameters(international401:Parameters|r4:FHIRError concept) returns international401:Parameters|r4:FHIRError {
     international401:ParametersParameter[] params = [];
@@ -188,4 +205,75 @@ isolated function designationToParameter(r4:CodeSystemConceptDesignation designa
     param.part = part;
 
     return param;
+}
+
+isolated function stringToParameterizedQuery(string queryStr) returns sql:ParameterizedQuery {
+    sql:ParameterizedQuery query = ``;
+    query.strings = [queryStr];
+    return query;
+}
+
+isolated function extractZipFile(string dirPath) returns error? {
+    check zip:extract(dirPath + ZIP_FILE_NAME, dirPath + ZIP_FILE_EXTRACTION_PATH);
+}
+
+isolated function removeDirectory(string dirPath) returns error? {
+    if check file:test(dirPath, file:EXISTS) {
+        check file:remove(dirPath, file:RECURSIVE);
+    }
+}
+
+isolated function saveCompressedPayload(stream<byte[], io:Error?> payloadStream, string dirPath) returns error? {
+    check removeDirectory(dirPath);
+    check file:createDir(dirPath, file:RECURSIVE);
+
+    check io:fileWriteBlocksFromStream(dirPath + ZIP_FILE_NAME, payloadStream);
+}
+
+isolated function readFilesForUpload(string path) returns CodeSystemValueSetJson|error {
+    file:MetaData[] readDir = check file:readDir(path + FHIR_PACKAGE_PATH);
+
+    CodeSystemValueSetJson jsonArrays = {
+        codeSystems: [],
+        valueSets: []
+    };
+
+    foreach var item in readDir {
+        string[] nonEmptyParts = regex:split(item.absPath, "\\\\").filter(s => s != "");
+        string lastPart = nonEmptyParts[nonEmptyParts.length() - 1];
+
+        if lastPart.endsWith(".json") && lastPart.startsWith("CodeSystem-") {
+            jsonArrays.codeSystems.push(check io:fileReadJson(item.absPath));
+        } else if lastPart.endsWith(".json") && lastPart.startsWith("ValueSet-") {
+            jsonArrays.valueSets.push(check io:fileReadJson(item.absPath));
+        }
+    }
+
+    return jsonArrays;
+}
+
+isolated function readFilesAsJsons(string path) returns json[]|error {
+    file:MetaData[] readDir = check file:readDir(path);
+
+    json[] jsonList = [];
+
+    foreach var item in readDir {
+        string[] nonEmptyParts = regex:split(item.absPath, "\\\\").filter(s => s != "");
+        string lastPart = nonEmptyParts[nonEmptyParts.length() - 1];
+
+        if lastPart.endsWith(".json") {
+            jsonList.push(check io:fileReadJson(item.absPath));
+        }
+    }
+
+    return jsonList;
+}
+
+isolated function readFileJsonAndReturnCodeSystem(string path) returns r4:CodeSystem|error {
+    string jsonString = check io:fileReadString(path);
+    return check parser:parse(jsonString).ensureType();
+}
+
+function init() returns error? {
+    check removeDirectory(TEMPORARY_FILES_DIRECTORY_NAME);
 }
