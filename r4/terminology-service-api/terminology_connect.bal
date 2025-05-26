@@ -615,7 +615,7 @@ public isolated function addValueSet(http:Request req) returns r4:FHIRError? {
         }
     } on fail var e {
         return r4:createFHIRError(
-                "Invalid request payload, "  + e.message(),
+                "Invalid request payload, " + e.message(),
                 r4:ERROR,
                 r4:INVALID_REQUIRED,
                 cause = e,

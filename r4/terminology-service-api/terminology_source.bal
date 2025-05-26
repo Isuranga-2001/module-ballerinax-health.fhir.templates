@@ -394,7 +394,7 @@ public isolated class TerminologySource {
             }
         }
 
-        // 4. Pagination
+        // Pagination
         int totalCount = allConcepts.length();
         r4:ValueSetExpansionContains[] pagedConcepts;
         if totalCount > offset + count {
@@ -405,8 +405,6 @@ public isolated class TerminologySource {
             pagedConcepts = [];
         }
 
-        // 5. Build expansion
-        // r4:ValueSetExpansion expandedValueSet = createExpandedValueSet(valueSet, pagedConcepts);
         r4:ValueSetExpansion expansion = createExpandedValueSet(valueSet, pagedConcepts);
         expansion.total = totalCount;
         expansion.offset = offset;
