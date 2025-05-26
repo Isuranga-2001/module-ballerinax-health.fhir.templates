@@ -481,7 +481,7 @@ modules = [
 [[package]]
 org = "ballerinax"
 name = "health.fhir.r4.terminology"
-version = "5.0.3"
+version = "5.0.2"
 dependencies = [
 	{org = "ballerina", name = "http"},
 	{org = "ballerina", name = "io"},
@@ -595,6 +595,7 @@ dependencies = [
 ]
 modules = [
 	{org = "wso2", packageName = "terminology_service_api", moduleName = "terminology_service_api"},
+	{org = "wso2", packageName = "terminology_service_api", moduleName = "terminology_service_api.loinc_to_fhir"},
 	{org = "wso2", packageName = "terminology_service_api", moduleName = "terminology_service_api.store"}
 ]
 
