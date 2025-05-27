@@ -64,6 +64,8 @@ public type CodeSystemUpdate record {|
 public type Concept record {|
     readonly int conceptId;
     string code;
+    string? display;
+    string? definition;
     byte[] concept;
     int? parentConceptId;
     int codesystemCodeSystemId;
@@ -73,6 +75,8 @@ public type Concept record {|
 public type ConceptOptionalized record {|
     int conceptId?;
     string code?;
+    string? display?;
+    string? definition?;
     byte[] concept?;
     int? parentConceptId?;
     int codesystemCodeSystemId?;
@@ -88,6 +92,8 @@ public type ConceptTargetType typedesc<ConceptWithRelations>;
 
 public type ConceptInsert record {|
     string code;
+    string? display;
+    string? definition;
     byte[] concept;
     int? parentConceptId;
     int codesystemCodeSystemId;
@@ -95,6 +101,8 @@ public type ConceptInsert record {|
 
 public type ConceptUpdate record {|
     string code?;
+    string? display?;
+    string? definition?;
     byte[] concept?;
     int? parentConceptId?;
     int codesystemCodeSystemId?;

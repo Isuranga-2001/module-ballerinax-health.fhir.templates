@@ -1,31 +1,51 @@
 import ballerina/sql;
 import ballerinax/persist.sql as psql;
 
-isolated psql:DataSourceSpecifics dataspecifics = initializeDataSourceSpecs();
+type SQLSyntax record {|
+    psql:DataSourceSpecifics dataspecifics;
+    string regexOperator;
+|};
 
-public isolated function initializeDataSourceSpecs() returns psql:DataSourceSpecifics {
+isolated SQLSyntax syntax = initializeDataSourceSpecs();
+
+isolated function initializeDataSourceSpecs() returns SQLSyntax {
     match db_type {
         "mysql" => {
-            return psql:MYSQL_SPECIFICS;
+            return {
+                dataspecifics: psql:MYSQL_SPECIFICS,
+                regexOperator: " REGEXP "
+            };
         }
         "postgresql" => {
-            return psql:POSTGRESQL_SPECIFICS;
+            return {
+                dataspecifics: psql:POSTGRESQL_SPECIFICS,
+                regexOperator: " ~ "
+            };
         }
         "mssql" => {
-            return psql:MSSQL_SPECIFICS;
+            return {
+                dataspecifics: psql:MSSQL_SPECIFICS,
+                regexOperator: " LIKE "
+            };
         }
         "h2" => {
-            return psql:H2_SPECIFICS;
+            return {
+                dataspecifics: psql:H2_SPECIFICS,
+                regexOperator: " REGEXP "
+            };
         }
         _ => {
-            return psql:POSTGRESQL_SPECIFICS;
+             return {
+                dataspecifics: psql:POSTGRESQL_SPECIFICS,
+                regexOperator: " ~ "
+            };
         }
     }
 }
 
 isolated function escape(string value) returns string {
     lock {
-        return dataspecifics.quoteOpen + value + dataspecifics.quoteClose;
+        return syntax.dataspecifics.quoteOpen + value + syntax.dataspecifics.quoteClose;
     }
 }
 
@@ -33,5 +53,19 @@ isolated function escapeToQuery(string value) returns sql:ParameterizedQuery {
     lock {
         string escapedValue = escape(value);
         return stringToParameterizedQuery(escapedValue);
+    }
+}
+
+isolated function getRegexOperator() returns sql:ParameterizedQuery {
+    lock {
+	    return stringToParameterizedQuery(syntax.regexOperator);
+    }
+}
+
+isolated function getLimitClause(int count, int offset) returns sql:ParameterizedQuery {
+    if db_type == "mssql" {
+        return `OFFSET ${offset} ROWS FETCH NEXT ${count} ROWS ONLY`;
+    } else {
+        return `LIMIT ${count} OFFSET ${offset}`;
     }
 }

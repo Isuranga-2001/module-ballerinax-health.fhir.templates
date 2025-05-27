@@ -16,6 +16,7 @@
 
 import ballerina/io;
 import ballerina/test;
+import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
 
 function returnCodeSystemData(string fileName) returns json {
@@ -45,7 +46,18 @@ function returnValueSetData(string fileName) returns json {
     json|error data = io:fileReadJson(filePath);
 
     if data is json {
-       return data;
+        return data;
+    } else {
+        test:assertFail(string `Can not load data from: ${filePath}`);
+    }
+}
+
+function returnConceptData(string fileName) returns json {
+    string filePath = string `tests/resources/concepts/${fileName}.json`;
+    json|error data = io:fileReadJson(filePath);
+
+    if data is json {
+        return data;
     } else {
         test:assertFail(string `Can not load data from: ${filePath}`);
     }
@@ -89,4 +101,32 @@ isolated function addExampleDataToTestDB() returns error? {
     foreach string item in valueSetList {
         _ = check terminology:addValueSet(check terminology:readValueSetByUrl(item), terminology = terminology_source);
     }
+}
+
+function assertParametersEqual(international401:Parameters expected, international401:Parameters actual) returns boolean {
+    international401:ParametersParameter[]? expectedParams = expected.'parameter;
+    international401:ParametersParameter[]? actualParams = actual.'parameter;
+
+    if expectedParams is () || actualParams is () {
+        test:assertFail("Parameter arrays are empty. Expected: " + expected.'parameter.count().toString() + ", Actual: " + actual.'parameter.count().toString());
+    }
+
+    if expectedParams.length() != actualParams.length() {
+        test:assertFail("Parameter array lengths differ. Expected: " + expected.'parameter.count().toString() + ", Actual: " + actual.'parameter.count().toString());
+    }
+
+    foreach var expParam in expectedParams {
+        boolean found = false;
+        foreach var actParam in actualParams {
+            if expParam.toJson().toString() == actParam.toJson().toString() {
+                found = true;
+                break;
+            }
+        }
+        if !found {
+            test:assertFail("Expected parameter not found in actual: " + expParam.toJson().toString());
+        }
+    }
+
+    return true;
 }

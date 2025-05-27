@@ -41,6 +41,8 @@ public isolated client class Client {
                 codeSystem: {columnName: "codeSystem"},
                 "concepts[].conceptId": {relation: {entityName: "concepts", refField: "conceptId"}},
                 "concepts[].code": {relation: {entityName: "concepts", refField: "code"}},
+                "concepts[].display": {relation: {entityName: "concepts", refField: "display"}},
+                "concepts[].definition": {relation: {entityName: "concepts", refField: "definition"}},
                 "concepts[].concept": {relation: {entityName: "concepts", refField: "concept"}},
                 "concepts[].parentConceptId": {relation: {entityName: "concepts", refField: "parentConceptId"}},
                 "concepts[].codesystemCodeSystemId": {relation: {entityName: "concepts", refField: "codesystemCodeSystemId"}}
@@ -54,6 +56,8 @@ public isolated client class Client {
             fieldMetadata: {
                 conceptId: {columnName: "conceptId", dbGenerated: true},
                 code: {columnName: "code"},
+                display: {columnName: "display"},
+                definition: {columnName: "definition"},
                 concept: {columnName: "concept"},
                 parentConceptId: {columnName: "parentConceptId"},
                 codesystemCodeSystemId: {columnName: "codesystemCodeSystemId"},
@@ -186,6 +190,8 @@ public isolated client class Client {
                 "valuesetCompose.codeSystemId": {relation: {entityName: "valuesetCompose", refField: "codeSystemId"}},
                 "concept.conceptId": {relation: {entityName: "concept", refField: "conceptId"}},
                 "concept.code": {relation: {entityName: "concept", refField: "code"}},
+                "concept.display": {relation: {entityName: "concept", refField: "display"}},
+                "concept.definition": {relation: {entityName: "concept", refField: "definition"}},
                 "concept.concept": {relation: {entityName: "concept", refField: "concept"}},
                 "concept.parentConceptId": {relation: {entityName: "concept", refField: "parentConceptId"}},
                 "concept.codesystemCodeSystemId": {relation: {entityName: "concept", refField: "codesystemCodeSystemId"}}

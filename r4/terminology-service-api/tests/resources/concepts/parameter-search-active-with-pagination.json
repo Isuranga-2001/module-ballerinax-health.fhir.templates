@@ -1,0 +1,21 @@
+{
+    "resourceType": "Parameters",
+    "parameter": [
+        {
+            "name": "concept",
+            "valueCoding": {
+                "system": "http://hl7.org/fhir/resource-status",
+                "code": "inactive",
+                "display": "inactive"
+            }
+        },
+        {
+            "name": "concept",
+            "valueCoding": {
+                "system": "http://hl7.org/fhir/resource-status",
+                "code": "active",
+                "display": "active"
+            }
+        }
+    ]
+}

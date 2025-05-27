@@ -1,0 +1,29 @@
+{
+    "resourceType": "Parameters",
+    "parameter": [
+        {
+            "name": "concept",
+            "valueCoding": {
+                "system": "http://hl7.org/fhir/resource-status",
+                "code": "active",
+                "display": "active"
+            }
+        },
+        {
+            "name": "concept",
+            "valueCoding": {
+                "system": "http://hl7.org/fhir/account-status",
+                "code": "inactive",
+                "display": "Inactive"
+            }
+        },
+        {
+            "name": "concept",
+            "valueCoding": {
+                "system": "http://hl7.org/fhir/resource-status",
+                "code": "inactive",
+                "display": "inactive"
+            }
+        }
+    ]
+}
