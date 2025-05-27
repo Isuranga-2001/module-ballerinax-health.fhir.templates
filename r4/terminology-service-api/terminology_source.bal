@@ -215,7 +215,11 @@ public isolated class TerminologySource {
             }
         }
 
-        stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause = whereClause);
+        if offset is int && count is int {
+            whereClause = sql:queryConcat(whereClause, getLimitClause(count, offset));
+        }
+
+        stream<store:CodeSystem, persist:Error?> codeSystemStream = sClient->/codesystems(store:CodeSystem, whereClause);
         store:CodeSystem[]|error dbCodeSystems = streamToStoreCodeSystem(codeSystemStream);
 
         if dbCodeSystems is error {
@@ -260,7 +264,11 @@ public isolated class TerminologySource {
             }
         }
 
-        stream<store:ValueSet, persist:Error?> valueSetStream = sClient->/valuesets(store:ValueSet, whereClause = whereClause);
+        if offset is int && count is int {
+            whereClause = sql:queryConcat(whereClause, getLimitClause(count, offset));
+        }
+
+        stream<store:ValueSet, persist:Error?> valueSetStream = sClient->/valuesets(store:ValueSet, whereClause);
         store:ValueSet[]|error dbValueSets = streamToStoreValueSet(valueSetStream);
 
         if dbValueSets is error {

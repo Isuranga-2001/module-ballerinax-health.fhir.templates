@@ -195,4 +195,21 @@ service http:InterceptableService / on interceptorListener {
 
         return check findCodeGet(request);
     }
+
+    isolated resource function post fhir/r4/Concept/\$find\-code(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+        log:printDebug(string `FHIR Terminology request is received. Interaction: Find Code (POST)`);
+
+        international401:Parameters|r4:FHIRError result = check findCodePost(request);
+        if result is r4:FHIRError {
+            http:Response errorResponse = new;
+            errorResponse.statusCode = http:STATUS_BAD_REQUEST;
+            errorResponse.setJsonPayload(result.message());
+            return errorResponse;
+        } else {
+            http:Response response = new;
+            response.statusCode = http:STATUS_OK;
+            response.setJsonPayload(result.toJson());
+            return response;
+        }
+    }
 }

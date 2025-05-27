@@ -1104,3 +1104,72 @@ public function searchConcept4() returns error? {
 
     test:assertEquals(response.statusCode, 400);
 }
+
+@test:Config {
+    groups: ["concept", "find_code", "successful_scenario"]
+}
+public function searchConceptPost1() returns error? {
+    // Valid POST request with all parameters
+    international401:ParametersParameter filterParam = {name: "filter", valueString: "active"};
+    international401:ParametersParameter countParam = {name: "_count", valueInteger: 2};
+    international401:ParametersParameter offsetParam = {name: "_offset", valueInteger: 1};
+    international401:Parameters requestPayload = {'parameter: [filterParam, countParam, offsetParam]};
+
+    http:Response response = check cClient->post("/%24find-code", requestPayload);
+
+    json actualJson = check response.getJsonPayload();
+    international401:Parameters actual = check actualJson.cloneWithType(international401:Parameters);
+    international401:Parameters expected = check returnConceptData("parameter-search-active-with-pagination").cloneWithType(international401:Parameters);
+    
+    test:assertTrue(assertParametersEqual(expected, actual), "Expected and actual parameters do not match");
+}
+
+@test:Config {
+    groups: ["concept", "find_code", "failure_scenario"]
+}
+public function searchConceptPost_MissingFilter() returns error? {
+    // Missing 'filter' parameter
+    international401:ParametersParameter propertyParam = {name: "property", valueString: "display"};
+    international401:Parameters requestPayload = {'parameter: [propertyParam]};
+    http:Response response = check cClient->post("/%24find-code", requestPayload);
+    json actualJson = check response.getJsonPayload();
+    r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
+    test:assertEquals((<r4:CodeableConcept>actual.issue[0].details).text, "Missing 'filter' parameter");
+}
+
+@test:Config {
+    groups: ["concept", "find_code", "failure_scenario"]
+}
+public function searchConceptPost_InvalidProperty() returns error? {
+    // Invalid 'property' parameter
+    international401:ParametersParameter filterParam = {name: "filter", valueString: "active"};
+    international401:ParametersParameter propertyParam = {name: "property", valueString: "invalid"};
+    international401:Parameters requestPayload = {'parameter: [filterParam, propertyParam]};
+    http:Response response = check cClient->post("/%24find-code", requestPayload);
+    json actualJson = check response.getJsonPayload();
+    r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
+    test:assertEquals((<r4:CodeableConcept>actual.issue[0].details).text, "Invalid property value. Only 'display' or 'definition' are allowed.");
+}
+
+@test:Config {
+    groups: ["concept", "find_code", "failure_scenario"]
+}
+public function searchConceptPost_EmptyPayload() returns error? {
+    // Empty payload
+    http:Response response = check cClient->post("/%24find-code", ());
+    json actualJson = check response.getJsonPayload();
+    r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
+    test:assertEquals((<r4:CodeableConcept>actual.issue[0].details).text, "Empty request payload");
+}
+
+@test:Config {
+    groups: ["concept", "find_code", "failure_scenario"]
+}
+public function searchConceptPost_InvalidPayload() returns error? {
+    // Invalid payload (not a Parameters resource)
+    json invalidPayload = {"foo": "bar"};
+    http:Response response = check cClient->post("/%24find-code", invalidPayload);
+    json actualJson = check response.getJsonPayload();
+    r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
+    test:assertEquals((<r4:CodeableConcept>actual.issue[0].details).text, "Invalid request payload");
+}

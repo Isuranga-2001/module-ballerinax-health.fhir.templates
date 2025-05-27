@@ -736,3 +736,74 @@ public isolated function findCodeGet(http:Request request) returns international
 
     return codeSystemDetailsIntoParameters(result);
 }
+
+public isolated function findCodePost(http:Request request) returns international401:Parameters|r4:FHIRError {
+    string property = DISPLAY;
+    string? system = ();
+    string? filter = ();
+    int count = terminology:TERMINOLOGY_SEARCH_DEFAULT_COUNT;
+    int offset = 0;
+
+    json|http:ClientError jsonPayload = request.getJsonPayload();
+    if jsonPayload is json {
+        international401:Parameters|error parameters = jsonPayload.cloneWithType(international401:Parameters);
+        if parameters is international401:Parameters && parameters.'parameter is international401:ParametersParameter[] {
+            foreach var item in <international401:ParametersParameter[]>parameters.'parameter {
+                match item.name {
+                    "property" => {
+                        property = item.valueString ?: DISPLAY;
+                    }
+                    "system" => {
+                        system = item.valueString ?: ();
+                    }
+                    "filter" => {
+                        filter = item.valueString ?: ();
+                    }
+                    "_count" => {
+                        count = item.valueInteger is int ? <int>item.valueInteger : terminology:TERMINOLOGY_SEARCH_DEFAULT_COUNT;
+                    }
+                    "_offset" => {
+                        offset = item.valueInteger is int ? <int>item.valueInteger : 0;
+                    }
+                }
+            }
+        } else {
+            return r4:createFHIRError(
+                "Invalid request payload",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                cause = parameters is error ? parameters : (),
+                httpStatusCode = http:STATUS_BAD_REQUEST);
+        }
+    } else {
+        return r4:createFHIRError(
+            "Empty request payload",
+            r4:ERROR,
+            r4:INVALID_REQUIRED,
+            httpStatusCode = http:STATUS_BAD_REQUEST);
+    }
+
+    if filter is () {
+        return r4:createFHIRError(
+            "Missing 'filter' parameter",
+            r4:ERROR,
+            r4:INVALID_REQUIRED,
+            httpStatusCode = http:STATUS_BAD_REQUEST);
+    }
+
+    if !(property == DISPLAY || property == DEFINITION) {
+        return r4:createFHIRError(
+            "Invalid property value. Only 'display' or 'definition' are allowed.",
+            r4:ERROR,
+            r4:INVALID_REQUIRED,
+            httpStatusCode = http:STATUS_BAD_REQUEST);
+    }
+
+    terminology:CodeConceptDetails[]|r4:FHIRError result = terminology_source.searchConcept(<DISPLAY|DEFINITION>property, <string>filter, system, offset, count);
+
+    if result is r4:FHIRError {
+        return result;
+    }
+
+    return codeSystemDetailsIntoParameters(result);
+}
