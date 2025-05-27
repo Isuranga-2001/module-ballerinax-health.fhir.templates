@@ -8,7 +8,6 @@ import ballerina/time;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
-import ballerina/io;
 
 final TerminologySource terminology_source = new TerminologySource();
 
@@ -728,8 +727,6 @@ public isolated function findCodeGet(http:Request request) returns international
                 cause = e,
                 httpStatusCode = http:STATUS_BAD_REQUEST);
     }
-
-    io:println("400");
 
     terminology:CodeConceptDetails[]|r4:FHIRError result = terminology_source.searchConcept(<DISPLAY|DEFINITION>property, <string>filter, system, offset, count);
 

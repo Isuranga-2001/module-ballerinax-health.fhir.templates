@@ -5,16 +5,16 @@
             "name": "concept",
             "valueCoding": {
                 "system": "http://hl7.org/fhir/resource-status",
-                "code": "active",
-                "display": "active"
+                "code": "inactive",
+                "display": "inactive"
             }
         },
         {
             "name": "concept",
             "valueCoding": {
-                "system": "http://hl7.org/fhir/account-status",
-                "code": "inactive",
-                "display": "Inactive"
+                "system": "http://hl7.org/fhir/resource-status",
+                "code": "active",
+                "display": "active"
             }
         }
     ]

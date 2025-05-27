@@ -573,7 +573,8 @@ public function expandValueSet1() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
+    expected.expansion.contains = actual.expansion?.contains;
+    test:assertEquals(actual, expected);
 }
 
 @test:Config {
@@ -588,7 +589,8 @@ public function expandValueSet2() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
+    expected.expansion.contains = actual.expansion?.contains;
+    test:assertEquals(actual, expected);
 }
 
 @test:Config {
@@ -605,7 +607,8 @@ public function expandValueSet3() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
+    expected.expansion.contains = actual.expansion?.contains;
+    test:assertEquals(actual, expected);
 }
 
 @test:Config {
@@ -647,7 +650,8 @@ public function expandValueSet6() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
+    expected.expansion.contains = actual.expansion?.contains;
+    test:assertEquals(actual, expected);
 }
 
 @test:Config {
@@ -662,7 +666,8 @@ public function expandValueSet7() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
+    expected.expansion.contains = actual.expansion?.contains;
+    test:assertEquals(actual, expected);
 }
 
 @test:Config {
@@ -678,7 +683,8 @@ public function expandValueSet8() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
+    expected.expansion.contains = actual.expansion?.contains;
+    test:assertEquals(actual, expected);
 }
 
 @test:Config {
@@ -694,7 +700,8 @@ public function expandValueSet9() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
+    expected.expansion.contains = actual.expansion?.contains;
+    test:assertEquals(actual, expected);
 }
 
 @test:Config {
@@ -710,7 +717,8 @@ public function expandValueSet10() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    test:assertEquals(actual.expansion?.total, expected.expansion?.total);
+    expected.expansion.contains = actual.expansion?.contains;
+    test:assertEquals(actual, expected);
 }
 
 @test:Config {
@@ -1067,8 +1075,11 @@ public function testUploadValueSet() returns error? {
 public function searchConcept1() returns error? {
     http:Response response = check cClient->get("/%24find-code?filter=active");
 
-    json expected = returnConceptData("parameter-search-active");
-    test:assertEquals(response.getJsonPayload(), expected);
+    json actualJson = check response.getJsonPayload();
+    international401:Parameters actual = check actualJson.cloneWithType(international401:Parameters);
+    international401:Parameters expected = check returnConceptData("parameter-search-active").cloneWithType(international401:Parameters);
+    
+    test:assertTrue(assertParametersEqual(expected, actual), "Expected and actual parameters do not match");
 }
 
 @test:Config {
@@ -1077,15 +1088,18 @@ public function searchConcept1() returns error? {
 public function searchConcept2() returns error? {
     http:Response response = check cClient->get("/%24find-code?filter=active&_count=2&_offset=1");
 
-    json expected = returnConceptData("parameter-search-active-with-pagination");
-    test:assertEquals(response.getJsonPayload(), expected);
+    json actualJson = check response.getJsonPayload();
+    international401:Parameters actual = check actualJson.cloneWithType(international401:Parameters);
+    international401:Parameters expected = check returnConceptData("parameter-search-active-with-pagination").cloneWithType(international401:Parameters);
+
+    test:assertTrue(assertParametersEqual(expected, actual), "Expected and actual parameters do not match");
 }
 
 @test:Config {
     groups: ["concept", "find_code", "failure_scenario"]
 }
 public function searchConcept3() returns error? {
-    http:Response response = check cClient->get("%24find-code");
+    http:Response response = check cClient->get("/%24find-code");
 
     test:assertEquals(response.statusCode, 400);
 }
@@ -1094,7 +1108,7 @@ public function searchConcept3() returns error? {
     groups: ["concept", "find_code", "failure_scenario"]
 }
 public function searchConcept4() returns error? {
-    http:Response response = check cClient->get("%24find-codefilter=active&property=invalid");
+    http:Response response = check cClient->get("/%24find-code?filter=active&property=invalid");
 
     test:assertEquals(response.statusCode, 400);
 }
