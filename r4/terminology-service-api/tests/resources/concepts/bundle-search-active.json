@@ -1,25 +1,29 @@
 {
-    "resourceType": "Parameters",
-    "parameter": [
+    "resourceType": "Bundle",
+    "meta": {
+        "profile": [
+            "http://hl7.org/fhir/StructureDefinition/Bundle"
+        ]
+    },
+    "type": "searchset",
+    "total": 3,
+    "entry": [
         {
-            "name": "concept",
-            "valueCoding": {
+            "resource": {
                 "system": "http://hl7.org/fhir/resource-status",
                 "code": "active",
                 "display": "active"
             }
         },
         {
-            "name": "concept",
-            "valueCoding": {
+            "resource": {
                 "system": "http://hl7.org/fhir/account-status",
                 "code": "inactive",
                 "display": "Inactive"
             }
         },
         {
-            "name": "concept",
-            "valueCoding": {
+            "resource": {
                 "system": "http://hl7.org/fhir/resource-status",
                 "code": "inactive",
                 "display": "inactive"

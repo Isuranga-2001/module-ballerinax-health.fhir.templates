@@ -172,3 +172,37 @@ function assertValueSetExpansionsEqual(r4:ValueSetExpansion? expected, r4:ValueS
 
     return true;
 }
+
+function assertBundleEqual(r4:Bundle expected, r4:Bundle actual) returns boolean {
+    r4:BundleEntry[]? expectedEntries = expected.entry;
+    r4:BundleEntry[]? actualEntries = actual.entry;
+
+    if expectedEntries is () || actualEntries is () {
+        test:assertFail("Bundle entries are empty. Expected: " + expected.entry.count().toString() + ", Actual: " + actual.entry.count().toString());
+    }
+
+    if expectedEntries.length() != actualEntries.length() {
+        test:assertFail("Bundle entry array lengths differ. Expected: " + expectedEntries.length().toString() + ", Actual: " + actualEntries.length().toString());
+    }
+
+    foreach r4:BundleEntry expEntry in <r4:BundleEntry[]>expectedEntries {
+        boolean found = false;
+
+        r4:Coding expectedResource = check expEntry?.'resource.cloneWithType(r4:Coding);
+        foreach var actEntry in actualEntries {
+            r4:Coding actualResource = check actEntry?.'resource.cloneWithType(r4:Coding);
+            if expectedResource.code == actualResource.code && expectedResource.display == actualResource.display {
+                found = true;
+                break;
+            }
+        }
+
+        if !found {
+            test:assertFail("Expected bundle entry not found in actual: " + expectedResource.toString());
+        }
+    } on fail {
+    	return false;
+    } 
+
+    return true;
+}

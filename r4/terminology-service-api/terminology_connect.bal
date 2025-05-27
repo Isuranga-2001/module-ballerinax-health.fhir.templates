@@ -502,7 +502,7 @@ public isolated function addCodeSystem(http:Request req) returns r4:FHIRError? {
         r4:CodeSystem codeSystem;
 
         // for JSON content
-        if contentType == "application/json" {
+        if contentType == JSON || contentType == FHIR_JSON {
             ParseCodeSystem parsedCodeSystem = check jsondata:parseStream(check req.getByteStream());
 
             if parsedCodeSystem.content is () || parsedCodeSystem.status is () {
@@ -517,7 +517,7 @@ public isolated function addCodeSystem(http:Request req) returns r4:FHIRError? {
         }
 
         // for XML content
-        else if contentType == "application/xml" {
+        else if contentType == XML || contentType == FHIR_XML {
             XMLCodeSystem parsedCodeSystem = check xmldata:parseStream(check req.getByteStream());
 
             if parsedCodeSystem.content is () || parsedCodeSystem.status is () {
@@ -532,7 +532,7 @@ public isolated function addCodeSystem(http:Request req) returns r4:FHIRError? {
         }
 
         // for zip
-        else if contentType == "application/zip" {
+        else if contentType == ZIP {
             string path = req.getQueryParamValue("target-path") ?: "";
             string dirPath = createNewTempDirectory();
 
@@ -573,7 +573,7 @@ public isolated function addValueSet(http:Request req) returns r4:FHIRError? {
         string contentType = req.getContentType();
 
         // for JSON content
-        if contentType == "application/json" {
+        if contentType == JSON || contentType == FHIR_JSON {
             stream<byte[], error?> payloadStream = check req.getByteStream();
             ParseValueSet parseValueSet = check jsondata:parseStream(s = payloadStream);
             if parseValueSet.status is () {
@@ -590,7 +590,7 @@ public isolated function addValueSet(http:Request req) returns r4:FHIRError? {
         }
 
         // for zip
-        else if contentType == "application/zip" {
+        else if contentType == ZIP {
             string path = req.getQueryParamValue("target-path") ?: "";
             string dirPath = createNewTempDirectory();
 
@@ -624,7 +624,7 @@ public isolated function addValueSet(http:Request req) returns r4:FHIRError? {
 }
 
 public isolated function upload(http:Request payload) returns r4:FHIRError? {
-    if payload.getContentType() != "application/zip" {
+    if payload.getContentType() != ZIP {
         return r4:createFHIRError(
                 "Invalid request payload, content type is not supported",
                 r4:ERROR,
@@ -698,7 +698,7 @@ public isolated function upload(http:Request payload) returns r4:FHIRError? {
     }
 }
 
-public isolated function findCodeGet(http:Request request) returns international401:Parameters|r4:FHIRError {
+public isolated function findCodeGet(http:Request request) returns r4:Bundle|r4:FHIRError {
     string property = request.getQueryParamValue("property") ?: DISPLAY;
     string? system = request.getQueryParamValue("system");
     string? filter = request.getQueryParamValue("filter");
@@ -734,10 +734,10 @@ public isolated function findCodeGet(http:Request request) returns international
         return result;
     }
 
-    return codeSystemDetailsIntoParameters(result);
+    return codeSystemDetailsIntoBundle(result);
 }
 
-public isolated function findCodePost(http:Request request) returns international401:Parameters|r4:FHIRError {
+public isolated function findCodePost(http:Request request) returns r4:Bundle|r4:FHIRError {
     string property = DISPLAY;
     string? system = ();
     string? filter = ();
@@ -805,5 +805,5 @@ public isolated function findCodePost(http:Request request) returns internationa
         return result;
     }
 
-    return codeSystemDetailsIntoParameters(result);
+    return codeSystemDetailsIntoBundle(result);
 }

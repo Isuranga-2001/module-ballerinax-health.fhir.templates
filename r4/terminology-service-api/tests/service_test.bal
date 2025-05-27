@@ -62,10 +62,10 @@ public function getByIdCodeSystem3() returns error? {
 }
 public function searchCodeSystem1() returns error? {
     http:Response response = check csClient->get("?url=http://hl7.org/fhir/account-status");
-    
+
     json actualJson = check response.getJsonPayload();
     r4:Bundle actual = check actualJson.cloneWithType(r4:Bundle);
-    
+
     r4:Bundle expected = check returnCodeSystemData("empty-bundle").cloneWithType(r4:Bundle);
     r4:CodeSystem codeSystem = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
     codeSystem.concept = ();
@@ -85,10 +85,10 @@ public function searchCodeSystem1() returns error? {
 }
 public function searchCodeSystem2() returns error? {
     http:Response response = check csClient->get("?url=http://hl7.org/fhir/account-status&version=4.0.1&title=AccountStatus&status=draft&count=10&offset=0&name=AccountStatus&publisher=HL7%20%28FHIR%20Project%29");
-    
+
     json actualJson = check response.getJsonPayload();
     r4:Bundle actual = check actualJson.cloneWithType(r4:Bundle);
-    
+
     r4:Bundle expected = check returnCodeSystemData("empty-bundle").cloneWithType(r4:Bundle);
     r4:CodeSystem codeSystem = check returnCodeSystemData("account-status").cloneWithType(r4:CodeSystem);
     codeSystem.concept = ();
@@ -1062,33 +1062,33 @@ public function testUploadValueSet() returns error? {
 }
 
 @test:Config {
-    groups: ["concept", "find_code", "successful_scenario"]
+    groups: ["concepts", "find_code", "successful_scenario"]
 }
 public function searchConcept1() returns error? {
     http:Response response = check cClient->get("/%24find-code?filter=active");
 
     json actualJson = check response.getJsonPayload();
-    international401:Parameters actual = check actualJson.cloneWithType(international401:Parameters);
-    international401:Parameters expected = check returnConceptData("parameter-search-active").cloneWithType(international401:Parameters);
-    
-    test:assertTrue(assertParametersEqual(expected, actual), "Expected and actual parameters do not match");
+    r4:Bundle actual = check actualJson.cloneWithType(r4:Bundle);
+    r4:Bundle expected = check returnConceptData("bundle-search-active").cloneWithType(r4:Bundle);
+
+    test:assertTrue(assertBundleEqual(expected, actual));
 }
 
 @test:Config {
-    groups: ["concept", "find_code", "successful_scenario"]
+    groups: ["concepts", "find_code", "successful_scenario"]
 }
 public function searchConcept2() returns error? {
     http:Response response = check cClient->get("/%24find-code?filter=active&_count=2&_offset=1");
 
     json actualJson = check response.getJsonPayload();
-    international401:Parameters actual = check actualJson.cloneWithType(international401:Parameters);
-    international401:Parameters expected = check returnConceptData("parameter-search-active-with-pagination").cloneWithType(international401:Parameters);
+    r4:Bundle actual = check actualJson.cloneWithType(r4:Bundle);
+    r4:Bundle expected = check returnConceptData("bundle-search-active-with-pagination").cloneWithType(r4:Bundle);
 
-    test:assertTrue(assertParametersEqual(expected, actual), "Expected and actual parameters do not match");
+    test:assertTrue(assertBundleEqual(expected, actual));
 }
 
 @test:Config {
-    groups: ["concept", "find_code", "failure_scenario"]
+    groups: ["concepts", "find_code", "failure_scenario"]
 }
 public function searchConcept3() returns error? {
     http:Response response = check cClient->get("/%24find-code");
@@ -1097,7 +1097,7 @@ public function searchConcept3() returns error? {
 }
 
 @test:Config {
-    groups: ["concept", "find_code", "failure_scenario"]
+    groups: ["concepts", "find_code", "failure_scenario"]
 }
 public function searchConcept4() returns error? {
     http:Response response = check cClient->get("/%24find-code?filter=active&property=invalid");
@@ -1106,7 +1106,7 @@ public function searchConcept4() returns error? {
 }
 
 @test:Config {
-    groups: ["concept", "find_code", "successful_scenario"]
+    groups: ["concepts", "find_code", "successful_scenario"]
 }
 public function searchConceptPost1() returns error? {
     // Valid POST request with all parameters
@@ -1118,14 +1118,14 @@ public function searchConceptPost1() returns error? {
     http:Response response = check cClient->post("/%24find-code", requestPayload);
 
     json actualJson = check response.getJsonPayload();
-    international401:Parameters actual = check actualJson.cloneWithType(international401:Parameters);
-    international401:Parameters expected = check returnConceptData("parameter-search-active-with-pagination").cloneWithType(international401:Parameters);
-    
-    test:assertTrue(assertParametersEqual(expected, actual), "Expected and actual parameters do not match");
+    r4:Bundle actual = check actualJson.cloneWithType(r4:Bundle);
+    r4:Bundle expected = check returnConceptData("bundle-search-active-with-pagination").cloneWithType(r4:Bundle);
+
+    test:assertTrue(assertBundleEqual(expected, actual));
 }
 
 @test:Config {
-    groups: ["concept", "find_code", "failure_scenario"]
+    groups: ["concepts", "find_code", "failure_scenario"]
 }
 public function searchConceptPost_MissingFilter() returns error? {
     // Missing 'filter' parameter
@@ -1138,7 +1138,7 @@ public function searchConceptPost_MissingFilter() returns error? {
 }
 
 @test:Config {
-    groups: ["concept", "find_code", "failure_scenario"]
+    groups: ["concepts", "find_code", "failure_scenario"]
 }
 public function searchConceptPost_InvalidProperty() returns error? {
     // Invalid 'property' parameter
@@ -1152,7 +1152,7 @@ public function searchConceptPost_InvalidProperty() returns error? {
 }
 
 @test:Config {
-    groups: ["concept", "find_code", "failure_scenario"]
+    groups: ["concepts", "find_code", "failure_scenario"]
 }
 public function searchConceptPost_EmptyPayload() returns error? {
     // Empty payload
@@ -1163,7 +1163,7 @@ public function searchConceptPost_EmptyPayload() returns error? {
 }
 
 @test:Config {
-    groups: ["concept", "find_code", "failure_scenario"]
+    groups: ["concepts", "find_code", "failure_scenario"]
 }
 public function searchConceptPost_InvalidPayload() returns error? {
     // Invalid payload (not a Parameters resource)

@@ -8,6 +8,14 @@ enum SearchCodeProperties {
     DEFINITION = terminology:DEFINITION
 };
 
+enum ContentType {
+    FHIR_JSON = "application/fhir+json",
+    FHIR_XML = "application/fhir+xml",
+    JSON = "application/json",
+    XML = "application/xml",
+    ZIP = "application/zip"
+}
+
 type ConceptNode record {|
     int conceptId;
     int? parentConceptId;

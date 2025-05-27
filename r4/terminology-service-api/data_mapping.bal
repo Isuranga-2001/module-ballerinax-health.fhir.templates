@@ -395,15 +395,23 @@ isolated function mapHierarchyMeaning(ValueHierarchyMeaning? hierarchyMeaning) r
     return <r4:CodeSystemHierarchyMeaning>hierarchyMeaning.value;
 }
 
-isolated function codeSystemDetailsIntoParameters(TerminologyConcept[] codeSystemDetails) returns international401:Parameters {
-    international401:ParametersParameter[] params = [];
+isolated function codeSystemDetailsIntoBundle(TerminologyConcept[] codeSystemDetails) returns r4:Bundle {
+    r4:BundleEntry[] entries = [];
     foreach var detail in codeSystemDetails {
         r4:Coding coding = {
             system: detail.url,
             code: detail.concept.code,
             display: detail.concept.display
         };
-        params.push({name: "concept", valueCoding: coding});
+        // Each entry resource is a Coding resource (wrapped as json)
+        entries.push({
+            'resource: coding
+        });
     }
-    return { 'parameter: params };
+    
+    return {
+        'type: r4:BUNDLE_TYPE_SEARCHSET,
+        total: entries.length(),
+        entry: entries
+    };
 }
