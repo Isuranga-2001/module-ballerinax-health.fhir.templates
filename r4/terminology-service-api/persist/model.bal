@@ -22,6 +22,8 @@ public type Concept record {|
     @sql:Generated
     readonly int conceptId;
     string code;
+    string? display;
+    string? definition;
     byte[] concept;
     int? parentConceptId;
     CodeSystem codeSystem;

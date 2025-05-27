@@ -8,6 +8,7 @@ import ballerina/time;
 import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
+import ballerina/io;
 
 final TerminologySource terminology_source = new TerminologySource();
 
@@ -696,4 +697,45 @@ public isolated function upload(http:Request payload) returns r4:FHIRError? {
                 cause = e,
                 httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
     }
+}
+
+public isolated function findCodeGet(http:Request request) returns international401:Parameters|r4:FHIRError {
+    string property = request.getQueryParamValue("property") ?: DISPLAY;
+    string? system = request.getQueryParamValue("system");
+    string? filter = request.getQueryParamValue("filter");
+    int count;
+    int offset;
+
+    do {
+        if filter is () {
+            check error("Missing 'filter' query parameter");
+        }
+
+        if !(property == DISPLAY || property == DEFINITION) {
+            check error("Invalid property value. Only 'display' or 'definition' are allowed.");
+        } 
+
+        string? countStr = request.getQueryParamValue("_count");
+        string? offsetStr = request.getQueryParamValue("_offset");
+
+        count = countStr is string ? check int:fromString(countStr) : terminology:TERMINOLOGY_SEARCH_DEFAULT_COUNT;
+        offset = offsetStr is string ? check int:fromString(offsetStr) : 0;
+    } on fail var e {
+        return r4:createFHIRError(
+                "Invalid request payload, " + e.message(),
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                cause = e,
+                httpStatusCode = http:STATUS_BAD_REQUEST);
+    }
+
+    io:println("400");
+
+    terminology:CodeConceptDetails[]|r4:FHIRError result = terminology_source.searchConcept(<DISPLAY|DEFINITION>property, <string>filter, system, offset, count);
+
+    if result is r4:FHIRError {
+        return result;
+    }
+
+    return codeSystemDetailsIntoParameters(result);
 }

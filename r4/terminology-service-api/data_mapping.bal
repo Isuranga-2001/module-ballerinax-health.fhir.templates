@@ -394,3 +394,16 @@ isolated function mapHierarchyMeaning(ValueHierarchyMeaning? hierarchyMeaning) r
     // Map string value to r4:CodeSystemHierarchyMeaning enum
     return <r4:CodeSystemHierarchyMeaning>hierarchyMeaning.value;
 }
+
+isolated function codeSystemDetailsIntoParameters(TerminologyConcept[] codeSystemDetails) returns international401:Parameters {
+    international401:ParametersParameter[] params = [];
+    foreach var detail in codeSystemDetails {
+        r4:Coding coding = {
+            system: detail.url,
+            code: detail.concept.code,
+            display: detail.concept.display
+        };
+        params.push({name: "concept", valueCoding: coding});
+    }
+    return { 'parameter: params };
+}

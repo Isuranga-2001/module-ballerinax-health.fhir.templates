@@ -1,4 +1,12 @@
 import ballerinax/health.fhir.r4;
+import ballerinax/health.fhir.r4.terminology;
+
+type TerminologyConcept terminology:CodeConceptDetails;
+
+enum SearchCodeProperties {
+    DISPLAY = terminology:DISPLAY,
+    DEFINITION = terminology:DEFINITION
+};
 
 type ConceptNode record {|
     int conceptId;

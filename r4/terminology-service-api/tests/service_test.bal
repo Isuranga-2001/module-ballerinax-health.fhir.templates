@@ -9,6 +9,7 @@ import ballerinax/health.fhir.r4.terminology;
 http:Client baseClient = check new ("http://localhost:9089/fhir/r4");
 http:Client csClient = check new ("http://localhost:9089/fhir/r4/CodeSystem");
 http:Client vsClient = check new ("http://localhost:9089/fhir/r4/ValueSet");
+http:Client cClient = check new ("http://localhost:9089/fhir/r4/Concept");
 
 @test:BeforeSuite
 isolated function beforeSuite() returns error? {
@@ -987,7 +988,7 @@ public function testUpload1() returns error? {
     req.setPayload(zipBytes, contentType = "application/zip");
     req.setHeader(TYPE_HEADER, "FHIR");
 
-    http:Response response = check baseClient->post("/upload?target-path=hl7.terminology.r4/package", req);
+    http:Response response = check baseClient->post("/%24upload?target-path=hl7.terminology.r4/package", req);
     test:assertEquals(response.statusCode, 201);
 }
 
@@ -999,7 +1000,7 @@ public function testUpload2() returns error? {
     req.setPayload({}, contentType = "application/json");
     req.setHeader(TYPE_HEADER, "FHIR");
 
-    http:Response response = check baseClient->post("/upload?target-path=hl7.terminology.r4/package", req);
+    http:Response response = check baseClient->post("/%24upload?target-path=hl7.terminology.r4/package", req);
     test:assertEquals(response.statusCode, 400);
 }
 
@@ -1011,12 +1012,12 @@ public function testUpload3() returns error? {
     req.setPayload({}, contentType = "application/zip");
 
     // send without the header
-    http:Response response1 = check baseClient->post("/upload", req);
+    http:Response response1 = check baseClient->post("/%24upload", req);
     test:assertEquals(response1.statusCode, 400);
 
     // send with invalid header
     req.setHeader(TYPE_HEADER, "invalid");
-    http:Response response2 = check baseClient->post("/upload", req);
+    http:Response response2 = check baseClient->post("/%24upload", req);
     test:assertEquals(response2.statusCode, 400);
 }
 
@@ -1030,7 +1031,7 @@ public function testUploadLoinc() returns error? {
     req.setPayload(zipBytes, contentType = "application/zip");
     req.setHeader(TYPE_HEADER, "LOINC");
 
-    http:Response response = check baseClient->post("/upload?loinc-version=2.80", req);
+    http:Response response = check baseClient->post("/%24upload?loinc-version=2.80", req);
     test:assertEquals(response.statusCode, 201);
 }
 
@@ -1058,4 +1059,42 @@ public function testUploadValueSet() returns error? {
 
     http:Response response = check vsClient->post("/", req);
     test:assertEquals(response.statusCode, 201);
+}
+
+@test:Config {
+    groups: ["concept", "find_code", "successful_scenario"]
+}
+public function searchConcept1() returns error? {
+    http:Response response = check cClient->get("/%24find-code?filter=active");
+
+    json expected = returnConceptData("parameter-search-active");
+    test:assertEquals(response.getJsonPayload(), expected);
+}
+
+@test:Config {
+    groups: ["concept", "find_code", "successful_scenario"]
+}
+public function searchConcept2() returns error? {
+    http:Response response = check cClient->get("/%24find-code?filter=active&_count=2&_offset=1");
+
+    json expected = returnConceptData("parameter-search-active-with-pagination");
+    test:assertEquals(response.getJsonPayload(), expected);
+}
+
+@test:Config {
+    groups: ["concept", "find_code", "failure_scenario"]
+}
+public function searchConcept3() returns error? {
+    http:Response response = check cClient->get("%24find-code");
+
+    test:assertEquals(response.statusCode, 400);
+}
+
+@test:Config {
+    groups: ["concept", "find_code", "failure_scenario"]
+}
+public function searchConcept4() returns error? {
+    http:Response response = check cClient->get("%24find-codefilter=active&property=invalid");
+
+    test:assertEquals(response.statusCode, 400);
 }

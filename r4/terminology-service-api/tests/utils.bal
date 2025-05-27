@@ -51,6 +51,17 @@ function returnValueSetData(string fileName) returns json {
     }
 }
 
+function returnConceptData(string fileName) returns json {
+    string filePath = string `tests/resources/concepts/${fileName}.json`;
+    json|error data = io:fileReadJson(filePath);
+
+    if data is json {
+       return data;
+    } else {
+        test:assertFail(string `Can not load data from: ${filePath}`);
+    }
+}
+
 function returnBatchData(string fileName) returns json {
     string filePath = string `tests/resources/value_sets/batch_validation/${fileName}.json`;
     json|error data = io:fileReadJson(filePath);

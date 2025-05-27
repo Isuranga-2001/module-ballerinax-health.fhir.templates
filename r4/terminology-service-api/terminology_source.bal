@@ -445,6 +445,43 @@ public isolated class TerminologySource {
 
         return {'parameter: [{name: terminology:OUTCOME, valueCode: terminology:NOT_SUBSUMED}]};
     }
+
+    public isolated function searchConcept(DISPLAY|DEFINITION property, string filter, string? system, int offset, int count) returns terminology:CodeConceptDetails[]|r4:FHIRError {
+        sql:ParameterizedQuery whereClause = sql:queryConcat(
+                escapeToQuery(property), getRegexOperator(), stringToParameterizedQuery("'.*" + filter + ".*'"),
+                    system is () ? `` : sql:queryConcat(` AND c.`, escapeToQuery("url"), ` = ${system}`),
+                getLimitClause(count, offset)
+        );
+
+        stream<store:ConceptWithRelations, persist:Error?> conceptStream = sClient->/concepts(store:ConceptWithRelations, whereClause);
+        store:ConceptWithRelations[]|error dbConcepts = from store:ConceptWithRelations concept in conceptStream
+            select concept;
+
+        if dbConcepts is error {
+            return r4:createFHIRError(
+                    dbConcepts.message(),
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = dbConcepts,
+                    httpStatusCode = http:STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        terminology:CodeConceptDetails[] concepts = [];
+        foreach store:ConceptWithRelations dbConcept in dbConcepts {
+            r4:CodeSystemConcept|error codeSystemConcept = byteToConcept(<byte[]>dbConcept.concept);
+            if codeSystemConcept is error {
+                // Skip this Concept if parsing fails
+                continue;
+            }
+            terminology:CodeConceptDetails details = {
+                url: dbConcept.codeSystem?.url ?: "",
+                concept: codeSystemConcept
+            };
+            concepts.push(details);
+        }
+
+        return concepts;
+    }
 }
 
 isolated function isInParentChain(int targetAncestorId, ConceptNode currentNode) returns boolean {
@@ -856,6 +893,8 @@ isolated function extractConceptsFromCodeSystemRecursive(r4:CodeSystemConcept va
 isolated function saveCodeSystemConcept(r4:CodeSystemConcept concept, int codeSystemId, int? parentId) returns int|error {
     store:ConceptInsert dbConceptInsert = {
         code: concept.code,
+        display: concept.display,
+        definition: concept.definition,
         concept: check conceptToByte(concept),
         codesystemCodeSystemId: codeSystemId,
         parentConceptId: parentId

@@ -175,7 +175,7 @@ service http:InterceptableService / on interceptorListener {
         return result.toJson();
     }
 
-    isolated resource function post fhir/r4/upload(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function post fhir/r4/\$upload(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug(string `FHIR Terminology request is received. Interaction: Create`);
 
         r4:FHIRError? response = upload(request);
@@ -188,5 +188,11 @@ service http:InterceptableService / on interceptorListener {
             successResponse.setJsonPayload(response.toJson());
             return successResponse;
         }
+    }
+
+    isolated resource function get fhir/r4/Concept/\$find\-code(http:RequestContext ctx, http:Request request) returns international401:Parameters|r4:FHIRError {
+        log:printDebug(string `FHIR Terminology request is received. Interaction: Find Code`);
+
+        return check findCodeGet(request);
     }
 }
