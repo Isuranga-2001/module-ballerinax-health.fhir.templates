@@ -16,6 +16,7 @@
 
 import ballerina/io;
 import ballerina/test;
+import ballerinax/health.fhir.r4;
 import ballerinax/health.fhir.r4.international401;
 import ballerinax/health.fhir.r4.terminology;
 
@@ -125,6 +126,47 @@ function assertParametersEqual(international401:Parameters expected, internation
         }
         if !found {
             test:assertFail("Expected parameter not found in actual: " + expParam.toJson().toString());
+        }
+    }
+
+    return true;
+}
+
+function assertValueSetExpansionsEqual(r4:ValueSetExpansion? expected, r4:ValueSetExpansion? actual) returns boolean {
+    if expected is () && actual is () {
+        return true;
+    }
+    if expected is () || actual is () {
+        test:assertFail("ValueSetExpansion is empty or missing.");
+    }
+    
+    // Compare simple fields using assertEquals
+    test:assertEquals(expected.identifier, actual.identifier, "ValueSetExpansion identifier mismatch.");
+    test:assertEquals(expected.timestamp, actual.timestamp, "ValueSetExpansion timestamp mismatch.");
+    test:assertEquals(expected.total, actual.total, "ValueSetExpansion total mismatch.");
+    test:assertEquals(expected.offset, actual.offset, "ValueSetExpansion offset mismatch.");
+
+    r4:ValueSetExpansionContains[]? expectedContains = expected.contains;
+    r4:ValueSetExpansionContains[]? actualContains = actual.contains;
+
+    if expectedContains is () || actualContains is () {
+        test:assertFail("ValueSetExpansion 'contains' arrays are empty or missing.");
+    }
+
+    if expectedContains.length() != actualContains.length() {
+        test:assertFail("ValueSetExpansion 'contains' array lengths differ. Expected: " + expectedContains.length().toString() + ", Actual: " + actualContains.length().toString());
+    }
+
+    foreach var expItem in expectedContains {
+        boolean found = false;
+        foreach var actItem in actualContains {
+            if expItem.toJson().toString() == actItem.toJson().toString() {
+                found = true;
+                break;
+            }
+        }
+        if !found {
+            test:assertFail("Expected 'contains' item not found in actual: " + expItem.toJson().toString());
         }
     }
 

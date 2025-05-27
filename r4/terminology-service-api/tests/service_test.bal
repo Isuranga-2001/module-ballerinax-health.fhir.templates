@@ -573,8 +573,7 @@ public function expandValueSet1() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    expected.expansion.contains = actual.expansion?.contains;
-    test:assertEquals(actual, expected);
+    test:assertTrue(assertValueSetExpansionsEqual(expected.expansion, actual.expansion), "ValueSet expansions are not equal");
 }
 
 @test:Config {
@@ -589,8 +588,7 @@ public function expandValueSet2() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    expected.expansion.contains = actual.expansion?.contains;
-    test:assertEquals(actual, expected);
+    test:assertTrue(assertValueSetExpansionsEqual(expected.expansion, actual.expansion), "ValueSet expansions are not equal");
 }
 
 @test:Config {
@@ -607,8 +605,7 @@ public function expandValueSet3() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    expected.expansion.contains = actual.expansion?.contains;
-    test:assertEquals(actual, expected);
+    test:assertTrue(assertValueSetExpansionsEqual(expected.expansion, actual.expansion), "ValueSet expansions are not equal");
 }
 
 @test:Config {
@@ -650,8 +647,7 @@ public function expandValueSet6() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    expected.expansion.contains = actual.expansion?.contains;
-    test:assertEquals(actual, expected);
+    test:assertTrue(assertValueSetExpansionsEqual(expected.expansion, actual.expansion), "ValueSet expansions are not equal");
 }
 
 @test:Config {
@@ -666,8 +662,7 @@ public function expandValueSet7() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    expected.expansion.contains = actual.expansion?.contains;
-    test:assertEquals(actual, expected);
+    test:assertTrue(assertValueSetExpansionsEqual(expected.expansion, actual.expansion), "ValueSet expansions are not equal");
 }
 
 @test:Config {
@@ -683,8 +678,7 @@ public function expandValueSet8() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    expected.expansion.contains = actual.expansion?.contains;
-    test:assertEquals(actual, expected);
+    test:assertTrue(assertValueSetExpansionsEqual(expected.expansion, actual.expansion), "ValueSet expansions are not equal");
 }
 
 @test:Config {
@@ -700,8 +694,7 @@ public function expandValueSet9() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    expected.expansion.contains = actual.expansion?.contains;
-    test:assertEquals(actual, expected);
+    test:assertTrue(assertValueSetExpansionsEqual(expected.expansion, actual.expansion), "ValueSet expansions are not equal");
 }
 
 @test:Config {
@@ -717,8 +710,7 @@ public function expandValueSet10() returns error? {
     r4:ValueSet expected = check expectedJson.cloneWithType(r4:ValueSet);
 
     expected.expansion.timestamp = (<r4:ValueSetExpansion>actual.expansion).timestamp;
-    expected.expansion.contains = actual.expansion?.contains;
-    test:assertEquals(actual, expected);
+    test:assertTrue(assertValueSetExpansionsEqual(expected.expansion, actual.expansion), "ValueSet expansions are not equal");
 }
 
 @test:Config {
