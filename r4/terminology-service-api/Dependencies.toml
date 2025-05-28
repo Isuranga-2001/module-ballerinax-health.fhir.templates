@@ -5,7 +5,7 @@
 
 [ballerina]
 dependencies-toml-version = "2"
-distribution-version = "2201.12.2"
+distribution-version = "2201.12.3"
 
 [[package]]
 org = "ballerina"
@@ -62,9 +62,10 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "data.xmldata"
-version = "1.3.1"
+version = "1.4.0"
 dependencies = [
-	{org = "ballerina", name = "jballerina.java"}
+	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerina", name = "lang.object"}
 ]
 modules = [
 	{org = "ballerina", packageName = "data.xmldata", moduleName = "data.xmldata"}
@@ -209,6 +210,9 @@ version = "0.0.0"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"}
 ]
+modules = [
+	{org = "ballerina", packageName = "lang.regexp", moduleName = "lang.regexp"}
+]
 
 [[package]]
 org = "ballerina"
@@ -304,7 +308,7 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "regex"
-version = "1.4.3"
+version = "1.3.2"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"},
 	{org = "ballerina", name = "lang.string"}
@@ -330,10 +334,11 @@ modules = [
 [[package]]
 org = "ballerina"
 name = "task"
-version = "2.7.0"
+version = "2.10.0"
 dependencies = [
 	{org = "ballerina", name = "jballerina.java"},
-	{org = "ballerina", name = "time"}
+	{org = "ballerina", name = "time"},
+	{org = "ballerina", name = "uuid"}
 ]
 
 [[package]]
@@ -404,6 +409,17 @@ dependencies = [
 ]
 modules = [
 	{org = "ballerinai", packageName = "observe", moduleName = "observe"}
+]
+
+[[package]]
+org = "ballerinax"
+name = "cdc"
+version = "1.0.3"
+dependencies = [
+	{org = "ballerina", name = "crypto"},
+	{org = "ballerina", name = "data.jsondata"},
+	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerinai", name = "observe"}
 ]
 
 [[package]]
@@ -481,7 +497,7 @@ modules = [
 [[package]]
 org = "ballerinax"
 name = "health.fhir.r4.terminology"
-version = "5.0.2"
+version = "5.0.4"
 dependencies = [
 	{org = "ballerina", name = "http"},
 	{org = "ballerina", name = "io"},
@@ -544,13 +560,14 @@ modules = [
 [[package]]
 org = "ballerinax"
 name = "postgresql"
-version = "1.15.0"
+version = "1.16.0"
 dependencies = [
 	{org = "ballerina", name = "crypto"},
 	{org = "ballerina", name = "io"},
 	{org = "ballerina", name = "jballerina.java"},
 	{org = "ballerina", name = "sql"},
-	{org = "ballerina", name = "time"}
+	{org = "ballerina", name = "time"},
+	{org = "ballerinax", name = "cdc"}
 ]
 modules = [
 	{org = "ballerinax", packageName = "postgresql", moduleName = "postgresql"}
@@ -567,7 +584,7 @@ modules = [
 [[package]]
 org = "wso2"
 name = "terminology_service_api"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
 	{org = "ballerina", name = "data.jsondata"},
 	{org = "ballerina", name = "data.xmldata"},
@@ -575,6 +592,7 @@ dependencies = [
 	{org = "ballerina", name = "http"},
 	{org = "ballerina", name = "io"},
 	{org = "ballerina", name = "jballerina.java"},
+	{org = "ballerina", name = "lang.regexp"},
 	{org = "ballerina", name = "log"},
 	{org = "ballerina", name = "persist"},
 	{org = "ballerina", name = "regex"},

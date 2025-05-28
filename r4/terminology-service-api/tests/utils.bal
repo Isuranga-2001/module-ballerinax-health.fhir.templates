@@ -157,17 +157,11 @@ function assertValueSetExpansionsEqual(r4:ValueSetExpansion? expected, r4:ValueS
         test:assertFail("ValueSetExpansion 'contains' array lengths differ. Expected: " + expectedContains.length().toString() + ", Actual: " + actualContains.length().toString());
     }
 
-    foreach var expItem in expectedContains {
-        boolean found = false;
-        foreach var actItem in actualContains {
-            if expItem.toJson().toString() == actItem.toJson().toString() {
-                found = true;
-                break;
-            }
+    foreach r4:ValueSetExpansionContains contain in expectedContains {
+        if actualContains.indexOf(contain) == () {
+            test:assertFail("Expected 'contains' item not found in actual: " + contain.toJson().toString());
         }
-        if !found {
-            test:assertFail("Expected 'contains' item not found in actual: " + expItem.toJson().toString());
-        }
+        
     }
 
     return true;
@@ -185,24 +179,11 @@ function assertBundleEqual(r4:Bundle expected, r4:Bundle actual) returns boolean
         test:assertFail("Bundle entry array lengths differ. Expected: " + expectedEntries.length().toString() + ", Actual: " + actualEntries.length().toString());
     }
 
-    foreach r4:BundleEntry expEntry in <r4:BundleEntry[]>expectedEntries {
-        boolean found = false;
-
-        r4:Coding expectedResource = check expEntry?.'resource.cloneWithType(r4:Coding);
-        foreach var actEntry in actualEntries {
-            r4:Coding actualResource = check actEntry?.'resource.cloneWithType(r4:Coding);
-            if expectedResource.code == actualResource.code && expectedResource.display == actualResource.display {
-                found = true;
-                break;
-            }
+    foreach r4:BundleEntry entry in expectedEntries {
+        if actualEntries.indexOf(entry) == () {
+            test:assertFail("Expected bundle entry not found in actual: " + entry.toJson().toString());
         }
-
-        if !found {
-            test:assertFail("Expected bundle entry not found in actual: " + expectedResource.toString());
-        }
-    } on fail {
-    	return false;
-    } 
+    }
 
     return true;
 }

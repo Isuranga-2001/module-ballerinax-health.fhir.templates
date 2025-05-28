@@ -17,6 +17,7 @@ For more information, go to the module(s).
 - [health.fhir.templates.r4.servicerequest](r4/resource-apis/serviceRequest/Package.md)
 - [health.fhir.templates.r4.uscore501.encounter](r4/resource-apis/uscore501-encounter/Package.md)
 - [health.fhir.templates.r4.uscore501.patient](r4/resource-apis/uscore501-patient/Package.md)
+- [health.fhir.templates.r4.terminology-service-api](r4/terminology-service-api/Package.md)
 
 ## Building from the source
 

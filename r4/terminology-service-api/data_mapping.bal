@@ -161,17 +161,6 @@ isolated function streamToStoreValueSet(stream<store:ValueSet, persist:Error?> v
     return dbValueSets;
 }
 
-isolated function streamToBytes(stream<byte[], error?> byteStream) returns byte[]|error {
-    byte[] result = [];
-
-    check from byte[] chunk in byteStream
-        do {
-            result = [...result, ...chunk];
-        };
-
-    return result;
-}
-
 isolated function parseCodeSystemToR4CodeSystem(ParseCodeSystem customCodeSystem) returns r4:CodeSystem => {
     resourceType: customCodeSystem.resourceType,
     meta: customCodeSystem.meta,
