@@ -2,6 +2,7 @@ target
 generated
 Config.toml
 temp_files
+.vscode
 *.db
 
 !test.zip

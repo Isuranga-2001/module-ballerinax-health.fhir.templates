@@ -738,7 +738,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:9089/fhir/r4/Concept/%24find-code?filter=active&_count=2&_offset=1",
+					"raw": "http://localhost:9089/fhir/r4/%24find-code?filter=active&_count=2&_offset=1",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -747,7 +747,6 @@
 					"path": [
 						"fhir",
 						"r4",
-						"Concept",
 						"%24find-code"
 					],
 					"query": [
@@ -794,7 +793,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:9089/fhir/r4/Concept/%24find-code",
+					"raw": "http://localhost:9089/fhir/r4/%24find-code",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -803,7 +802,6 @@
 					"path": [
 						"fhir",
 						"r4",
-						"Concept",
 						"%24find-code"
 					],
 					"query": [

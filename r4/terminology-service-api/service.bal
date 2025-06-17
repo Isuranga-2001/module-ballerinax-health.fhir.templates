@@ -5,13 +5,13 @@ import ballerinax/health.fhir.r4.international401;
 
 listener http:Listener interceptorListener = new (9089, timeout = 0);
 
-service http:InterceptableService / on interceptorListener {
+service http:InterceptableService /fhir/r4 on interceptorListener {
 
     public function createInterceptors() returns FHIRResponseErrorInterceptor {
         return new FHIRResponseErrorInterceptor();
     }
 
-    isolated resource function get fhir/r4/ValueSet/\$expand(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function get ValueSet/\$expand(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: ValueSet Expand");
 
         r4:ValueSet valueSet = check valueSetExpansionGet(request);
@@ -21,7 +21,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function post fhir/r4/ValueSet/\$expand(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function post ValueSet/\$expand(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: ValueSet Expand");
 
         r4:ValueSet valueSet = check valueSetExpansionPost(request);
@@ -31,7 +31,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function get fhir/r4/ValueSet/\$validate\-code(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function get ValueSet/\$validate\-code(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: ValueSet Validate Code");
 
         international401:Parameters parameters = check valueSetValidateCodeGet(request);
@@ -41,7 +41,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function post fhir/r4/ValueSet/\$validate\-code(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function post ValueSet/\$validate\-code(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: ValueSet Validate Code");
 
         international401:Parameters parameters = check valueSetValidateCodePost(request);
@@ -51,7 +51,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function get fhir/r4/ValueSet/[string id]/\$expand(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function get ValueSet/[string id]/\$expand(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug(string `FHIR Terminology request is received. Interaction: ValueSet Expand with ValueSet Id: ${id}`);
 
         r4:ValueSet valueSet = check valueSetExpansionGet(request, id);
@@ -61,7 +61,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function get fhir/r4/ValueSet/[string id]/\$validate\-code(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function get ValueSet/[string id]/\$validate\-code(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug(string `FHIR Terminology request is received. Interaction: ValueSet Validate Code with ValueSet Id: ${id}`);
 
         international401:Parameters parameters = check valueSetValidateCodeGet(request, id);
@@ -71,7 +71,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function get fhir/r4/ValueSet/[string id](http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function get ValueSet/[string id](http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug(string `FHIR Terminology request is received. Interaction: ValueSet Get with ValueSet Id: ${id}`);
 
         r4:ValueSet valueSet = check readValueSetById(id);
@@ -81,7 +81,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function get fhir/r4/ValueSet(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function get ValueSet(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: ValueSet Search");
 
         r4:Bundle valueSet = check searchValueSet(request);
@@ -91,7 +91,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function post fhir/r4/ValueSet(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function post ValueSet(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: Add new ValueSet");
 
         _ = check addValueSet(request);
@@ -103,7 +103,7 @@ service http:InterceptableService / on interceptorListener {
 
     // ===============================================================================================================================
 
-    isolated resource function get fhir/r4/CodeSystem/\$lookup(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function get CodeSystem/\$lookup(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: CodeSystem Lookup");
 
         international401:Parameters codeSystemLookUpResult = check codeSystemLookUpGet(ctx, request);
@@ -113,7 +113,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function post fhir/r4/CodeSystem/\$lookup(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function post CodeSystem/\$lookup(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: CodeSystem Lookup");
 
         international401:Parameters result = check codeSystemLookUpPost(ctx, request);
@@ -123,7 +123,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function get fhir/r4/CodeSystem/\$subsumes(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function get CodeSystem/\$subsumes(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: CodeSystem Subsume");
 
         international401:Parameters subsumesResult = check subsumesGet(ctx, request);
@@ -133,7 +133,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function post fhir/r4/CodeSystem/\$subsumes(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function post CodeSystem/\$subsumes(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: CodeSystem Subsume");
 
         international401:Parameters result = check subsumesPost(ctx, request);
@@ -143,7 +143,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function get fhir/r4/CodeSystem/[string id]/\$lookup(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function get CodeSystem/[string id]/\$lookup(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug(string `FHIR Terminology request is received. Interaction: CodeSystem Lookup with Id: ${id}`);
 
         international401:Parameters codeSystemLookUpResult = check codeSystemLookUpGet(ctx, request, id);
@@ -153,7 +153,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function get fhir/r4/CodeSystem/[string id](http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function get CodeSystem/[string id](http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug(string `FHIR Terminology request is received. Interaction: CodeSystem Get with Id: ${id}`);
 
         r4:CodeSystem codeSystem = check readCodeSystemById(id);
@@ -163,7 +163,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function get fhir/r4/CodeSystem(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function get CodeSystem(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: CodeSystem Search");
 
         r4:Bundle codeSystem = check searchCodeSystem(request);
@@ -174,7 +174,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function post fhir/r4/CodeSystem(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function post CodeSystem(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: Add new CodeSystem");
 
         _ = check addCodeSystem(request);
@@ -186,7 +186,7 @@ service http:InterceptableService / on interceptorListener {
 
     // ===============================================================================================================================
 
-    isolated resource function post fhir/r4(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function post .(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: Batch");
 
         r4:Bundle result = check batchValidateValueSets(request);
@@ -196,7 +196,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function post fhir/r4/\$upload(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function post \$upload(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: Create");
 
         r4:FHIRError? response = upload(request);
@@ -211,7 +211,7 @@ service http:InterceptableService / on interceptorListener {
         }
     }
 
-    isolated resource function get fhir/r4/Concept/\$find\-code(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function get \$find\-code(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: Find Code");
 
         r4:Bundle result = check findCodeGet(request);
@@ -222,7 +222,7 @@ service http:InterceptableService / on interceptorListener {
         return response;
     }
 
-    isolated resource function post fhir/r4/Concept/\$find\-code(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+    isolated resource function post \$find\-code(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
         log:printDebug("FHIR Terminology request is received. Interaction: Find Code (POST)");
 
         r4:Bundle result = check findCodePost(request);
