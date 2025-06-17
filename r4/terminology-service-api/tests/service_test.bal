@@ -1172,3 +1172,14 @@ public function searchConceptPost_InvalidPayload() returns error? {
     r4:OperationOutcome actual = check actualJson.cloneWithType(r4:OperationOutcome);
     test:assertEquals((<r4:CodeableConcept>actual.issue[0].details).text, "Invalid request payload");
 }
+
+@test:Config {
+    groups: ["capabilitystatement", "metadata", "successful_scenario"]
+}
+public function getCapabilityStatementFromMetadata() returns error? {
+    http:Response response = check baseClient->get("/metadata");
+    test:assertEquals(response.statusCode, 200);
+    json payload = check response.getJsonPayload();
+    international401:CapabilityStatement|error capabilityStatement = payload.cloneWithType(international401:CapabilityStatement);
+    test:assertTrue(capabilityStatement is international401:CapabilityStatement, "CapabilityStatement should not be an error");
+}

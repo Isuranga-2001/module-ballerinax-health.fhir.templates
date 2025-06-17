@@ -232,4 +232,62 @@ service http:InterceptableService /fhir/r4 on interceptorListener {
         response.setPayload(result, FHIR_JSON);
         return response;
     }
+
+    isolated resource function get metadata(http:RequestContext ctx, http:Request request) returns http:Response|r4:FHIRError {
+        log:printDebug("FHIR Terminology request is received. Interaction: Metadata (CapabilityStatement)");
+
+        international401:CapabilityStatement capabilityStatement = {
+            status: "active",
+            date: "2025-06-17",
+            publisher: "Ballerina FHIR Terminology Service",
+            description: "CapabilityStatement for the Ballerina FHIR Terminology Service API.",
+            kind: "instance",
+            fhirVersion: "4.0.1",
+            format: ["json"],
+            rest: [
+                {
+                    mode: "server",
+                    documentation: "FHIR Terminology Service REST interface.",
+                    'resource: [
+                        {
+                            'type: "ValueSet",
+                            interaction: [
+                                {code: "read"},
+                                {code: "search-type"},
+                                {code: "create"},
+                                {code: "update"},
+                                {code: "delete"},
+                                {code: "patch"}
+                            ],
+                            operation: [
+                                {name: "expand", definition: "http://hl7.org/fhir/OperationDefinition/ValueSet-expand"},
+                                {name: "validate-code", definition: "http://hl7.org/fhir/OperationDefinition/ValueSet-validate-code"}
+                            ]
+                        },
+                        {
+                            'type: "CodeSystem",
+                            interaction: [
+                                {code: "read"},
+                                {code: "search-type"},
+                                {code: "create"},
+                                {code: "update"},
+                                {code: "delete"},
+                                {code: "patch"}
+                            ],
+                            operation: [
+                                {name: "lookup", definition: "http://hl7.org/fhir/OperationDefinition/CodeSystem-lookup"},
+                                {name: "subsumes", definition: "http://hl7.org/fhir/OperationDefinition/CodeSystem-subsumes"}
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        http:Response response = new;
+        response.statusCode = http:STATUS_OK;
+        response.setJsonPayload(capabilityStatement.toJson());
+        response.setHeader("content-type", "application/fhir+json");
+        return response;
+    }
 }
