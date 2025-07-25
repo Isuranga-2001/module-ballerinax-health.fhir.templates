@@ -1,4 +1,5 @@
 import terminology_service_api.loinc_to_fhir as loinc;
+import terminology_service_api.snomed_to_fhir as snomed;
 
 import ballerina/data.jsondata;
 import ballerina/data.xmldata;
@@ -644,20 +645,13 @@ public isolated function upload(http:Request payload) returns r4:FHIRError? {
                     diagnostic = string `The request should contains ${TYPE_HEADER} header and supported values are: FHIR, LOINC and SNOMED`,
                     httpStatusCode = http:STATUS_BAD_REQUEST);
         }
-        else if typeHeader != "FHIR" && typeHeader != "LOINC" && typeHeader != "SNOMED" {
+        else if typeHeader != FHIR && typeHeader != LOINC && typeHeader != SNOMED {
             return r4:createFHIRError(
                     string `Invalid ${TYPE_HEADER} header value`,
                     r4:ERROR,
                     r4:INVALID_REQUIRED,
                     diagnostic = string `The request should contains ${TYPE_HEADER} header and supported values are: FHIR, LOINC and SNOMED`,
                     httpStatusCode = http:STATUS_BAD_REQUEST);
-        } else if typeHeader == "SNOMED" {
-            // TODO: create a module for convert SNOMED to FHIR
-            return r4:createFHIRError(
-                    "SNOMED upload is not implemented yet",
-                    r4:ERROR,
-                    r4:INVALID_REQUIRED,
-                    httpStatusCode = http:STATUS_NOT_IMPLEMENTED);
         }
 
         string dirPath = createNewTempDirectory();
@@ -668,7 +662,7 @@ public isolated function upload(http:Request payload) returns r4:FHIRError? {
         r4:FHIRError? result = ();
 
         // standard FHIR
-        if typeHeader == "FHIR" {
+        if typeHeader == FHIR {
             CodeSystemValueSetJson jsonArrays = check readFilesForUpload(dirPath + ZIP_FILE_EXTRACTION_PATH);
 
             _ = terminology:addCodeSystemsAsJson(jsonArrays.codeSystems, terminology = terminology_source);
@@ -676,11 +670,21 @@ public isolated function upload(http:Request payload) returns r4:FHIRError? {
         }
 
         // LOINC
-        else if typeHeader == "LOINC" {
+        else if typeHeader == LOINC {
             string? version = payload.getQueryParamValue("loinc-version");
             check loinc:convert(dirPath + ZIP_FILE_EXTRACTION_PATH, version);
 
             r4:CodeSystem codeSystem = check readFileJsonAndReturnCodeSystem(dirPath + ZIP_FILE_EXTRACTION_PATH + loinc:FHIR_LOINC_FILE_NAME);
+
+            result = terminology:addCodeSystem(codeSystem, terminology = terminology_source);
+        }
+
+        // SNOMED
+        else if typeHeader == SNOMED {
+            string? version = payload.getQueryParamValue("snomed-version");
+            check snomed:convert(dirPath + ZIP_FILE_EXTRACTION_PATH, version);
+
+            r4:CodeSystem codeSystem = check readFileJsonAndReturnCodeSystem(dirPath + ZIP_FILE_EXTRACTION_PATH + snomed:FHIR_SNOMED_FILE_NAME);
 
             result = terminology:addCodeSystem(codeSystem, terminology = terminology_source);
         }
@@ -712,7 +716,7 @@ public isolated function findCodeGet(http:Request request) returns r4:Bundle|r4:
 
         if !(property == DISPLAY || property == DEFINITION) {
             check error("Invalid property value. Only 'display' or 'definition' are allowed.");
-        } 
+        }
 
         string? countStr = request.getQueryParamValue("_count");
         string? offsetStr = request.getQueryParamValue("_offset");
@@ -769,34 +773,34 @@ public isolated function findCodePost(http:Request request) returns r4:Bundle|r4
             }
         } else {
             return r4:createFHIRError(
-                "Invalid request payload",
-                r4:ERROR,
-                r4:INVALID_REQUIRED,
-                cause = parameters is error ? parameters : (),
-                httpStatusCode = http:STATUS_BAD_REQUEST);
+                    "Invalid request payload",
+                    r4:ERROR,
+                    r4:INVALID_REQUIRED,
+                    cause = parameters is error ? parameters : (),
+                    httpStatusCode = http:STATUS_BAD_REQUEST);
         }
     } else {
         return r4:createFHIRError(
-            "Empty request payload",
-            r4:ERROR,
-            r4:INVALID_REQUIRED,
-            httpStatusCode = http:STATUS_BAD_REQUEST);
+                "Empty request payload",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                httpStatusCode = http:STATUS_BAD_REQUEST);
     }
 
     if filter is () {
         return r4:createFHIRError(
-            "Missing 'filter' parameter",
-            r4:ERROR,
-            r4:INVALID_REQUIRED,
-            httpStatusCode = http:STATUS_BAD_REQUEST);
+                "Missing 'filter' parameter",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                httpStatusCode = http:STATUS_BAD_REQUEST);
     }
 
     if !(property == DISPLAY || property == DEFINITION) {
         return r4:createFHIRError(
-            "Invalid property value. Only 'display' or 'definition' are allowed.",
-            r4:ERROR,
-            r4:INVALID_REQUIRED,
-            httpStatusCode = http:STATUS_BAD_REQUEST);
+                "Invalid property value. Only 'display' or 'definition' are allowed.",
+                r4:ERROR,
+                r4:INVALID_REQUIRED,
+                httpStatusCode = http:STATUS_BAD_REQUEST);
     }
 
     terminology:CodeConceptDetails[]|r4:FHIRError result = terminology_source.searchConcept(<DISPLAY|DEFINITION>property, <string>filter, system, offset, count);

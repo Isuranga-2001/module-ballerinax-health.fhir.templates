@@ -35,7 +35,7 @@ isolated function initializeDataSourceSpecs() returns SQLSyntax {
             };
         }
         _ => {
-             return {
+            return {
                 dataspecifics: psql:POSTGRESQL_SPECIFICS,
                 regexOperator: " ~ "
             };
@@ -58,7 +58,7 @@ isolated function escapeToQuery(string value) returns sql:ParameterizedQuery {
 
 isolated function getRegexOperator() returns sql:ParameterizedQuery {
     lock {
-	    return stringToParameterizedQuery(syntax.regexOperator);
+        return stringToParameterizedQuery(syntax.regexOperator);
     }
 }
 

@@ -43,7 +43,6 @@ isolated function validationResultToParameters(international401:Parameters|r4:FH
     };
 }
 
-
 isolated function prepareRequestSearchParameter(map<string[]> params) returns map<r4:RequestSearchParameter[]> {
     map<r4:RequestSearchParameter[]> searchParams = {};
     foreach var 'key in params.keys() {

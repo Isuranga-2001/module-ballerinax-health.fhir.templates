@@ -3,19 +3,6 @@ import ballerinax/health.fhir.r4.terminology;
 
 type TerminologyConcept terminology:CodeConceptDetails;
 
-enum SearchCodeProperties {
-    DISPLAY = terminology:DISPLAY,
-    DEFINITION = terminology:DEFINITION
-};
-
-enum ContentType {
-    FHIR_JSON = "application/fhir+json",
-    FHIR_XML = "application/fhir+xml",
-    JSON = "application/json",
-    XML = "application/xml",
-    ZIP = "application/zip"
-}
-
 type ConceptNode record {|
     int conceptId;
     int? parentConceptId;

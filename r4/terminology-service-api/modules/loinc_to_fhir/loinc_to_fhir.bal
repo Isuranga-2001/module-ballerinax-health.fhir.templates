@@ -11,7 +11,7 @@ isolated function readLoincCsv(string path) returns LoincConcept[]|error {
 isolated function exportCodeSystem(LoincConcept[] concepts, string? 'version, string jsonFilePath) returns error? {
     r4:CodeSystem codeSystem;
     codeSystem = check createCodeSystemResource(concepts, 'version);
-    
+
     check io:fileWriteString(jsonFilePath, codeSystem.toJson().toJsonString());
 }
 

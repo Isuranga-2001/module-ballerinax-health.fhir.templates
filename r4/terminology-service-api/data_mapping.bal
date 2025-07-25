@@ -397,7 +397,7 @@ isolated function codeSystemDetailsIntoBundle(TerminologyConcept[] codeSystemDet
             'resource: coding
         });
     }
-    
+
     return {
         'type: r4:BUNDLE_TYPE_SEARCHSET,
         total: entries.length(),

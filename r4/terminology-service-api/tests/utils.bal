@@ -139,7 +139,7 @@ function assertValueSetExpansionsEqual(r4:ValueSetExpansion? expected, r4:ValueS
     if expected is () || actual is () {
         test:assertFail("ValueSetExpansion is empty or missing.");
     }
-    
+
     // Compare simple fields using assertEquals
     test:assertEquals(expected.identifier, actual.identifier, "ValueSetExpansion identifier mismatch.");
     test:assertEquals(expected.timestamp, actual.timestamp, "ValueSetExpansion timestamp mismatch.");
@@ -161,7 +161,7 @@ function assertValueSetExpansionsEqual(r4:ValueSetExpansion? expected, r4:ValueS
         if actualContains.indexOf(contain) == () {
             test:assertFail("Expected 'contains' item not found in actual: " + contain.toJson().toString());
         }
-        
+
     }
 
     return true;
