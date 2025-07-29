@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-appointment-api
+      displayName: international401 Appointment API
+      service:
+        basePath: /Appointment
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/Appointment.yaml

@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-encounter-api
+      displayName: international401 Encounter API
+      service:
+        basePath: /Encounter
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/Encounter.yaml

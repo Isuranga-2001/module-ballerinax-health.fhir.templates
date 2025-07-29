@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-testscript-api
+      displayName: international401 TestScript API
+      service:
+        basePath: /TestScript
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/TestScript.yaml

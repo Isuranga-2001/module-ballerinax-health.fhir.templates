@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-terminologycapabilities-api
+      displayName: international401 TerminologyCapabilities API
+      service:
+        basePath: /TerminologyCapabilities
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/TerminologyCapabilities.yaml

@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-devicerequest-api
+      displayName: international401 DeviceRequest API
+      service:
+        basePath: /DeviceRequest
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/DeviceRequest.yaml

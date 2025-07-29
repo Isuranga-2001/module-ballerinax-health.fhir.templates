@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-supplyrequest-api
+      displayName: international401 SupplyRequest API
+      service:
+        basePath: /SupplyRequest
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/SupplyRequest.yaml

@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-bodystructure-api
+      displayName: international401 BodyStructure API
+      service:
+        basePath: /BodyStructure
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/BodyStructure.yaml

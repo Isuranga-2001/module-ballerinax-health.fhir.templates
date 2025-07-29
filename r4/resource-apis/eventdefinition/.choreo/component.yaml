@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-eventdefinition-api
+      displayName: international401 EventDefinition API
+      service:
+        basePath: /EventDefinition
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/EventDefinition.yaml

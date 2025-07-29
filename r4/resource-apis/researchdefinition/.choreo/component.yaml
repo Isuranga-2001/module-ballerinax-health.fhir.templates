@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-researchdefinition-api
+      displayName: international401 ResearchDefinition API
+      service:
+        basePath: /ResearchDefinition
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/ResearchDefinition.yaml

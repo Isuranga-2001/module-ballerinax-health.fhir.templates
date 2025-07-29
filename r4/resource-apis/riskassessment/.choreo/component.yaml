@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-riskassessment-api
+      displayName: international401 RiskAssessment API
+      service:
+        basePath: /RiskAssessment
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/RiskAssessment.yaml

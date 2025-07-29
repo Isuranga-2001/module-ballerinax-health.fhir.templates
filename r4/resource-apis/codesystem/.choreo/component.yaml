@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-codesystem-api
+      displayName: international401 CodeSystem API
+      service:
+        basePath: /CodeSystem
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/CodeSystem.yaml

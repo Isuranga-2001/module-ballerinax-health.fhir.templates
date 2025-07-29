@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-requestgroup-api
+      displayName: international401 RequestGroup API
+      service:
+        basePath: /RequestGroup
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/RequestGroup.yaml

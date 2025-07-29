@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-subscription-api
+      displayName: international401 Subscription API
+      service:
+        basePath: /Subscription
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/Subscription.yaml

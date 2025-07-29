@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-medicinalproductundesirableeffect-api
+      displayName: international401 MedicinalProductUndesirableEffect API
+      service:
+        basePath: /MedicinalProductUndesirableEffect
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/MedicinalProductUndesirableEffect.yaml

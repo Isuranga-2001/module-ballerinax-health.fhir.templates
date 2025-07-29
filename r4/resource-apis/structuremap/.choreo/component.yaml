@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-structuremap-api
+      displayName: international401 StructureMap API
+      service:
+        basePath: /StructureMap
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/StructureMap.yaml
