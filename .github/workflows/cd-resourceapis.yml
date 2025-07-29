@@ -1,0 +1,86 @@
+name: CD - FHIR API Templates
+
+on:
+  workflow_dispatch:
+    inputs:
+      bal_central_environment:
+        description: Ballerina Central Environment
+        type: choice
+        options:
+        - STAGE
+        - DEV
+        - PROD
+        required: true
+
+jobs:
+  findpaths:
+    runs-on: ubuntu-latest
+    outputs:
+      subdirectories: ${{ steps.extract_subdirectories.outputs.subdirectories }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Extract subdirectories of /r4/resource-apis and store in an array
+        id: extract_subdirectories
+        run: |
+          dir_array=$(find ./r4/resource-apis -mindepth 1 -maxdepth 1 -type d -exec printf '"%s"' {} \; | jq -s -c .)
+          echo "subdirectories=$dir_array" >> $GITHUB_OUTPUT
+
+  release:
+    needs: [findpaths]
+    runs-on: ubuntu-latest
+    if: ${{ needs.findpaths.outputs.subdirectories != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        path: ${{ fromJSON(needs.findpaths.outputs.subdirectories) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Run ballerina build for dev
+        if: inputs.bal_central_environment == 'DEV'
+        uses: ballerina-platform/ballerina-action@2201.10.2
+        with:
+          args:
+            pack
+        env:
+          WORKING_DIR: ${{ matrix.path }}
+          JAVA_HOME: /usr/lib/jvm/default-jvm 
+          BALLERINA_DEV_CENTRAL: true
+          BALLERINA_CENTRAL_ACCESS_TOKEN: ${{ secrets.BALLERINA_CENTRAL_DEV_ACCESS_TOKEN }} 
+
+      - name: Run ballerina build for prod
+        if: inputs.bal_central_environment == 'PROD'
+        uses: ballerina-platform/ballerina-action@2201.10.2
+        with:
+          args:
+            pack
+        env:
+          WORKING_DIR: ${{ matrix.path }}
+          JAVA_HOME: /usr/lib/jvm/default-jvm 
+
+      - name: Push to Dev
+        if: inputs.bal_central_environment == 'DEV'
+        uses: ballerina-platform/ballerina-action@2201.10.2
+        with:
+          args:
+            push
+        env:
+          WORKING_DIR: ${{ matrix.path }}
+          JAVA_HOME: /usr/lib/jvm/default-jvm
+          BALLERINA_DEV_CENTRAL: true
+          BALLERINA_CENTRAL_ACCESS_TOKEN: ${{ secrets.BALLERINA_CENTRAL_DEV_ACCESS_TOKEN }}     
+
+      - name: Push to Prod
+        if: inputs.bal_central_environment == 'PROD'
+        uses: ballerina-platform/ballerina-action@2201.10.2
+        with:
+          args:
+            push
+        env:
+          WORKING_DIR: ${{ matrix.path }}
+          JAVA_HOME: /usr/lib/jvm/default-jvm
+          BALLERINA_CENTRAL_ACCESS_TOKEN: ${{ secrets.BALLERINA_CENTRAL_ACCESS_TOKEN }}

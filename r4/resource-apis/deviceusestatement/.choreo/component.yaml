@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-deviceusestatement-api
+      displayName: international401 DeviceUseStatement API
+      service:
+        basePath: /DeviceUseStatement
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/DeviceUseStatement.yaml

@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-coverageeligibilityresponse-api
+      displayName: international401 CoverageEligibilityResponse API
+      service:
+        basePath: /CoverageEligibilityResponse
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/CoverageEligibilityResponse.yaml

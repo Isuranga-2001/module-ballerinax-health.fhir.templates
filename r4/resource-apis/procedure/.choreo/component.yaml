@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-procedure-api
+      displayName: international401 Procedure API
+      service:
+        basePath: /Procedure
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/Procedure.yaml

@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-imagingstudy-api
+      displayName: international401 ImagingStudy API
+      service:
+        basePath: /ImagingStudy
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/ImagingStudy.yaml

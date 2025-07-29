@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-medicinalproductmanufactured-api
+      displayName: international401 MedicinalProductManufactured API
+      service:
+        basePath: /MedicinalProductManufactured
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/MedicinalProductManufactured.yaml

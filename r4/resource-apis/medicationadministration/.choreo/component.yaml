@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-medicationadministration-api
+      displayName: international401 MedicationAdministration API
+      service:
+        basePath: /MedicationAdministration
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/MedicationAdministration.yaml

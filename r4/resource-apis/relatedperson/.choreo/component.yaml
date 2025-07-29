@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-relatedperson-api
+      displayName: international401 RelatedPerson API
+      service:
+        basePath: /RelatedPerson
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/RelatedPerson.yaml

@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-substanceprotein-api
+      displayName: international401 SubstanceProtein API
+      service:
+        basePath: /SubstanceProtein
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/SubstanceProtein.yaml

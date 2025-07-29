@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-medicinalproductauthorization-api
+      displayName: international401 MedicinalProductAuthorization API
+      service:
+        basePath: /MedicinalProductAuthorization
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/MedicinalProductAuthorization.yaml

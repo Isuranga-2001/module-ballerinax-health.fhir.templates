@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-medicinalproductpharmaceutical-api
+      displayName: international401 MedicinalProductPharmaceutical API
+      service:
+        basePath: /MedicinalProductPharmaceutical
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/MedicinalProductPharmaceutical.yaml

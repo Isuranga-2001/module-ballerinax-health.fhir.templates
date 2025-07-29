@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-organizationaffiliation-api
+      displayName: international401 OrganizationAffiliation API
+      service:
+        basePath: /OrganizationAffiliation
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/OrganizationAffiliation.yaml

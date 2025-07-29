@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-researchstudy-api
+      displayName: international401 ResearchStudy API
+      service:
+        basePath: /ResearchStudy
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/ResearchStudy.yaml

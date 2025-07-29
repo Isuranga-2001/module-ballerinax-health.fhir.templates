@@ -1,0 +1,12 @@
+schemaVersion: 1.1
+endpoints:
+    - name: international401-servicerequest-api
+      displayName: international401 ServiceRequest API
+      service:
+        basePath: /ServiceRequest
+        port: 9090
+      type: REST
+      networkVisibilities:
+        - Project
+        - Public
+      schemaFilePath: oas/ServiceRequest.yaml
