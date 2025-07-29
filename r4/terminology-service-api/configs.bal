@@ -29,5 +29,5 @@ enum TerminologyType {
     FHIR = "FHIR"
 }
 
-// configurable parameters
+// Configurable Parameters
 configurable string db_type = "postgresql";
