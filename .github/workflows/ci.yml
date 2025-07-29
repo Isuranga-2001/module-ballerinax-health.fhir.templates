@@ -91,7 +91,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Ballerina Build
-        uses: ballerina-platform/ballerina-action@2201.12.0
+        uses: ballerina-platform/ballerina-action@2201.10.0
         with:
           args: pack
         env:
@@ -113,7 +113,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Ballerina Test
-        uses: ballerina-platform/ballerina-action@2201.12.0
+        uses: ballerina-platform/ballerina-action@2201.10.0
         with:
           args: test --code-coverage
         env:
